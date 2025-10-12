@@ -1,0 +1,14 @@
+#!/bin/bash
+# Wrapper script to open files in WezTerm with vim
+# Used for macOS file associations
+
+# Get the full path to the file
+FILE="$1"
+
+if [ -z "$FILE" ]; then
+  # No file provided, just open WezTerm
+  /Applications/WezTerm.app/Contents/MacOS/wezterm start
+else
+  # Open WezTerm with vim and the file
+  /Applications/WezTerm.app/Contents/MacOS/wezterm start vim "$FILE"
+fi

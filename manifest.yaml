@@ -1,0 +1,84 @@
+# Dotfiles Manifest
+# This file defines which configuration files should be managed by dotfiles.py
+#
+# Format:
+#   - source: Path relative to dotfiles repo
+#     dest: Path relative to home directory
+#     description: Human-readable description
+#
+# To add a new dotfile, simply add a new entry to this list.
+
+dotfiles:
+  # Shell configurations
+  - source: .bashrc
+    dest: .bashrc
+    description: Bash configuration
+
+  - source: .zshrc
+    dest: .zshrc
+    description: Zsh configuration
+
+  - source: .profile
+    dest: .profile
+    description: Shell profile
+
+  # Editor configurations
+  - source: .vimrc
+    dest: .vimrc
+    description: Vim configuration
+
+  # X11 configurations
+  - source: .Xresources
+    dest: .Xresources
+    description: X resources (URxvt, colors, fonts)
+
+  # Terminal configurations
+  - source: .wezterm.lua
+    dest: .wezterm.lua
+    description: WezTerm terminal config
+
+  - source: .tmux.conf
+    dest: .tmux.conf
+    description: tmux terminal multiplexer config
+
+  # Window manager configurations
+  - source: .aerospace.toml
+    dest: .aerospace.toml
+    description: Aerospace window manager config (macOS)
+
+  # Application configs (directories)
+  - source: .config/i3
+    dest: .config/i3
+    description: i3 window manager config
+
+  - source: .config/i3status
+    dest: .config/i3status
+    description: i3status bar config
+
+  - source: .config/picom
+    dest: .config/picom
+    description: Picom compositor config
+
+  - source: .config/dunst
+    dest: .config/dunst
+    description: Dunst notification config
+
+  - source: .config/alacritty
+    dest: .config/alacritty
+    description: Alacritty terminal config
+
+  - source: .config/htop
+    dest: .config/htop
+    description: htop system monitor config
+
+  - source: .config/bpytop
+    dest: .config/bpytop
+    description: bpytop system monitor config
+
+  - source: .config/pcmanfm
+    dest: .config/pcmanfm
+    description: PCManFM file manager config
+
+  - source: .config/conky
+    dest: .config/conky
+    description: Conky system monitor config

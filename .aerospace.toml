@@ -1,0 +1,133 @@
+# Konstantin Zaremski's Aerospace Configuration
+# Mirroring i3wm configuration as closely as possible
+# Last updated: October 11, 2025
+
+start-at-login = true
+
+enable-normalization-flatten-containers = true
+enable-normalization-opposite-orientation-for-nested-containers = true
+
+on-focus-changed = ['move-mouse window-lazy-center']
+
+[gaps]
+inner.horizontal = 8
+inner.vertical = 8
+outer.left = 8
+outer.bottom = 8
+outer.top = 8
+outer.right = 8
+
+# Workspace to monitor assignment
+# Workspaces 1-3, 5 on main monitor, 6-10 on secondary (4 disabled for screenshot keybinding)
+[workspace-to-monitor-force-assignment]
+1 = 'main'
+2 = 'main'
+3 = 'main'
+5 = 'main'
+6 = 'secondary'
+7 = 'secondary'
+8 = 'secondary'
+9 = 'secondary'
+10 = 'secondary'
+
+[mode.main.binding]
+
+# Focus windows
+cmd-h = 'focus left'
+cmd-j = 'focus down'
+cmd-k = 'focus up'
+cmd-l = 'focus right'
+
+cmd-left = 'focus left'
+cmd-down = 'focus down'
+cmd-up = 'focus up'
+cmd-right = 'focus right'
+
+# Move windows
+cmd-shift-h = 'move left'
+cmd-shift-j = 'move down'
+cmd-shift-k = 'move up'
+cmd-shift-l = 'move right'
+
+cmd-shift-left = 'move left'
+cmd-shift-down = 'move down'
+cmd-shift-up = 'move up'
+cmd-shift-right = 'move right'
+
+# Workspaces (workspace 4 disabled - conflicts with macOS screenshot Cmd+Shift+4)
+cmd-1 = 'workspace 1'
+cmd-2 = 'workspace 2'
+cmd-3 = 'workspace 3'
+# cmd-4 = 'workspace 4'  # Disabled - conflicts with screenshot
+cmd-5 = 'workspace 5'
+cmd-6 = 'workspace 6'
+cmd-7 = 'workspace 7'
+cmd-8 = 'workspace 8'
+cmd-9 = 'workspace 9'
+cmd-0 = 'workspace 10'
+
+cmd-shift-1 = ['move-node-to-workspace 1', 'workspace 1']
+cmd-shift-2 = ['move-node-to-workspace 2', 'workspace 2']
+cmd-shift-3 = ['move-node-to-workspace 3', 'workspace 3']
+# cmd-shift-4 = ['move-node-to-workspace 4', 'workspace 4']  # Disabled - conflicts with screenshot
+cmd-shift-5 = ['move-node-to-workspace 5', 'workspace 5']
+cmd-shift-6 = ['move-node-to-workspace 6', 'workspace 6']
+cmd-shift-7 = ['move-node-to-workspace 7', 'workspace 7']
+cmd-shift-8 = ['move-node-to-workspace 8', 'workspace 8']
+cmd-shift-9 = ['move-node-to-workspace 9', 'workspace 9']
+cmd-shift-0 = ['move-node-to-workspace 10', 'workspace 10']
+
+# Layout management
+cmd-shift-f = 'fullscreen'
+cmd-shift-space = 'layout floating tiling'
+
+# Window management
+# cmd-shift-q = 'close'
+# cmd-r = 'mode resize'
+# cmd-shift-c = 'reload-config'
+
+# Applications
+#   Terminal
+cmd-enter = 'exec-and-forget open -a WezTerm'
+#   File Manager
+cmd-f1 = 'exec-and-forget open -a Finder'
+#   Web Browsers
+cmd-f2 = 'exec-and-forget open -a Safari'
+cmd-shift-f2 = 'exec-and-forget open -a Firefox'
+cmd-alt-f2 = 'exec-and-forget open -a "Google Chrome"'
+#   PDF Viewer
+cmd-f3 = 'exec-and-forget open -a Skim'
+
+# Resize mode
+[mode.resize.binding]
+h = 'resize width -50'
+j = 'resize height +50'
+k = 'resize height -50'
+l = 'resize width +50'
+
+left = 'resize width -50'
+down = 'resize height +50'
+up = 'resize height -50'
+right = 'resize width +50'
+
+enter = 'mode main'
+esc = 'mode main'
+cmd-r = 'mode main'
+
+# Auto-workspace assignments
+# [[on-window-detected]]
+# if.app-id = 'org.mozilla.firefox'
+# run = 'move-node-to-workspace 2'
+
+# [[on-window-detected]]
+# if.app-id = 'com.microsoft.VSCode'
+# run = 'move-node-to-workspace 3'
+
+# [[on-window-detected]]
+# if.app-id = 'com.apple.systempreferences'
+# run = 'layout floating'
+
+# [[on-window-detected]]
+# if.app-id = 'com.apple.finder'
+# if.window-title-regex-substring = '(Open|Save|Choose)'
+# run = 'layout floating'
