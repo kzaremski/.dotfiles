@@ -99,14 +99,18 @@ source $ZSH/oh-my-zsh.sh
 # Example aliases
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
-#
-if [[ `ps ho command $(ps ho ppid $$)` == 'urxvt' ]]; then
-  clear
+
+# Clear screen on urxvt launch (Linux only - disabled on macOS)
+# if [[ `ps ho command $(ps ho ppid $$)` == 'urxvt' ]]; then
+#   clear
+# fi
+
+# Local binaries
+if [ -d "$HOME/.local/bin" ]; then
+  export PATH="$HOME/.local/bin:$PATH"
 fi
 
-#export PATH="~/.local/bin:$PATH"
-alias lvim="~/.local/bin/lvim"
-
-export PATH="/home/kzaremski/.cargo/bin:$PATH"
-
-
+# Rust cargo binaries
+if [ -d "$HOME/.cargo/bin" ]; then
+  export PATH="$HOME/.cargo/bin:$PATH"
+fi
