@@ -7,7 +7,7 @@ start-at-login = true
 enable-normalization-flatten-containers = true
 enable-normalization-opposite-orientation-for-nested-containers = true
 
-on-focus-changed = ['move-mouse window-lazy-center']
+# on-focus-changed = ['move-mouse window-lazy-center'] # commented out since it seems to be causing issues, this is fine
 
 [gaps]
 inner.horizontal = 8
