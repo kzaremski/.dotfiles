@@ -114,3 +114,17 @@ fi
 if [ -d "$HOME/.cargo/bin" ]; then
   export PATH="$HOME/.cargo/bin:$PATH"
 fi
+
+# Aliases
+alias skim='open -a Skim'
+
+# Tmux layout launcher
+# Usage: tmux-layout [layout] [session_name] [directory]
+if [ -f "$HOME/.tmux/tmux-layout" ]; then
+  alias tmux-layout="$HOME/.tmux/tmux-layout"
+fi
+
+# Quick aliases for common tmux layouts
+alias tmux-dev="tmux-layout dev"
+alias tmux-monitor="tmux-layout monitor"
+alias tmux-simple="tmux-layout simple"

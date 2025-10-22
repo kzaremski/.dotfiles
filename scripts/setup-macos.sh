@@ -55,8 +55,8 @@ brew install node
 
 # Window management
 echo ""
-echo "==> Installing window manager (Aerospace)..."
-brew install --cask nikitabobko/tap/aerospace
+echo "==> Installing window manager (Rectangle)..."
+brew install --cask rectangle
 
 # Applications
 echo ""
@@ -67,7 +67,6 @@ brew install --cask wezterm            # Modern GPU-accelerated terminal
 brew install --cask skim               # PDF viewer with vim-like keybindings
 # brew install --cask iterm2           # Uncomment if you prefer iTerm2
 # brew install --cask spotify          # Uncomment if you want Spotify
-# brew install --cask rectangle        # Alternative window manager
 
 # Fonts
 echo ""
@@ -145,33 +144,16 @@ echo "=========================================="
 echo ""
 echo "Next steps:"
 echo "1. Log out and log back in (for shell and defaults changes)"
-echo "2. Disable conflicting macOS keyboard shortcuts:"
-echo "   System Settings → Keyboard → Keyboard Shortcuts → Mission Control"
-echo "   - Uncheck 'Mission Control' (Control + Up)"
-echo "   - Uncheck 'Application Windows' (Control + Down)"
-echo "   - Uncheck 'Move left/right a space' (Control + Left/Right)"
 echo ""
-echo "3. Run the dotfiles manager:"
+echo "2. Run the dotfiles manager:"
 echo "   cd ~/.dotfiles && python3 dotfiles.py --install-deps"
 echo "   python3 dotfiles.py"
 echo ""
-echo "4. Install Vim plugins:"
+echo "3. Install Vim plugins:"
 echo "   vim +PlugInstall +qall"
-echo ""
-echo "5. Configure Aerospace:"
-echo "   See: ~/.dotfiles/docs/MACOS_CONFIG.md"
 echo ""
 echo "Optional next steps:"
 echo "- Set WezTerm as your default terminal (System Settings → Default Terminal)"
 echo "- Set WezTerm as default for text files: ./scripts/set-vim-default.sh"
-echo "- Configure Aerospace: ~/.aerospace.toml (already in dotfiles)"
 echo "- Install Alfred for better app launcher (already installed)"
 echo "- Install Karabiner-Elements for advanced keyboard customization"
-echo ""
-echo "Aerospace keybindings (i3-style):"
-echo "- Cmd + Arrow Keys (or h/j/k/l) - Focus windows"
-echo "- Cmd + Shift + Arrow Keys - Move windows"
-echo "- Cmd + 1-9,0 - Switch workspaces"
-echo "- Cmd + F - Fullscreen"
-echo "- Cmd + R - Resize mode"
-echo "See docs/MACOS_CONFIG.md for complete Aerospace documentation"
