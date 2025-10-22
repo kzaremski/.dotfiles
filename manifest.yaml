@@ -27,6 +27,10 @@ dotfiles:
     dest: .vimrc
     description: Vim configuration
 
+  - source: .config/zed
+    dest: .config/zed
+    description: Zed editor configuration
+
   # X11 configurations
   - source: .Xresources
     dest: .Xresources
@@ -41,10 +45,23 @@ dotfiles:
     dest: .tmux.conf
     description: tmux terminal multiplexer config
 
+  - source: .tmux
+    dest: .tmux
+    description: tmux layout configurations and scripts
+
   # Window manager configurations
   - source: .aerospace.toml
     dest: .aerospace.toml
     description: Aerospace window manager config (macOS)
+
+  - source: com.knollsoft.Rectangle.plist
+    dest: Library/Preferences/com.knollsoft.Rectangle.plist
+    description: Rectangle window manager config (macOS)
+
+  # LaTeX configuration
+  - source: .latexmkrc
+    dest: .latexmkrc
+    description: latexmk configuration for LaTeX compilation
 
   # Application configs (directories)
   - source: .config/i3

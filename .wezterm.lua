@@ -9,13 +9,16 @@ local config = wezterm.config_builder()
 -- ==================
 
 -- Font configuration with fallbacks
--- First try Nerd Font version (has icons), fallback to regular Cascadia
+-- First try Nerd Font version (has icons), fallback to regular Cascadia,
+-- then use WezTerm's built-in glyphs for any missing symbols
 config.font = wezterm.font_with_fallback({
   'CaskaydiaCove Nerd Font Mono',  -- Nerd Font on macOS
   'CaskaydiaCove Nerd Font',       -- Nerd Font on Linux
   'Cascadia Mono',                 -- Regular Cascadia (fallback)
   'Cascadia Code',                 -- Another fallback
   'Menlo',                         -- macOS system monospace
+  'Symbols Nerd Font Mono',        -- Nerd Font symbols
+  -- WezTerm's built-in fallback fonts automatically used for missing glyphs
 })
 config.font_size = 12.5
 
@@ -142,6 +145,12 @@ config.keys = {
     key = 'd',
     mods = 'CMD',
     action = wezterm.action.SplitHorizontal { domain = 'CurrentPaneDomain' },
+  },
+  -- Shift+Enter sends escape sequence (for Claude Code)
+  {
+    key = 'Enter',
+    mods = 'SHIFT',
+    action = wezterm.action.SendString '\x1b\r',
   },
   {
     key = 'd',
