@@ -128,3 +128,6 @@ fi
 alias tmux-dev="tmux-layout dev"
 alias tmux-monitor="tmux-layout monitor"
 alias tmux-simple="tmux-layout simple"
+
+# SSH agent via keychain
+eval $(keychain --eval --quiet id_ed25519)
