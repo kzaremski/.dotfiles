@@ -11,3 +11,4 @@ PS1='[\u@\h \W]\$ '
 
 # SSH agent via keychain
 eval $(keychain --eval --quiet id_ed25519)
+
