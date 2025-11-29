@@ -118,6 +118,8 @@ bindsym $mod+F7 exec screen_layout_selector                     # Choose screen 
 bindsym $mod+Shift+F7 exec sh ~/.screenlayout/laptop.sh \
     && xrandr --dpi 96 \
     && feh --bg-fill ~/Pictures/wallpaper.jpg                   # Reset the display to the internal monitor
+# Password Manager
+bindsym $mod+F10 exec keepassxc                                 # KeePassXC password manager
 # System Management
 bindsym $mod+F12 exec kitty htop                                # HTOP task/resource manager
 bindsym $mod+Shift+F12 exec kitty bpytop                        # BPyTOP task/resource manager

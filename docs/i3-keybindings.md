@@ -19,6 +19,7 @@ Mod key: `Mod4` (Super/Windows key)
 | Mod+F3            | Thunderbird                     |
 | Mod+F4            | LibreOffice                     |
 | Mod+Shift+F5      | Captive portal (surf)           |
+| Mod+F10           | KeePassXC password manager      |
 | Mod+F12           | htop                            |
 | Mod+Shift+F12     | bpytop                          |
 
