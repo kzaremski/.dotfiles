@@ -1,4 +1,6 @@
 #!/bin/sh
+# appimage-launcher.sh
+# Launch AppImages from ~/Applications via dmenu
 chosenAppImage=$(ls $HOME/Applications/ | sed -e 's/\.AppImage$//' | dmenu -fn "CaskaydiaCove Nerd Font Mono-10")
 if [[ "$(expr length "$chosenAppImage")" != "0" ]]
 then

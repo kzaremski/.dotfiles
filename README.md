@@ -40,9 +40,11 @@ This repository contains my dotfiles and configuration for a keyboard-driven Lin
 ### i3 Keybindings
 
 **Applications**
-- `Mod+Enter` - Terminal (urxvt/WezTerm)
+- `Mod+Enter` - Terminal (kitty)
 - `Mod+Shift+Enter` - VSCode
 - `Mod+d` - dmenu launcher (Spotlight/Alfred on macOS)
+- `Mod+Shift+d` - Docs/reference selector
+- `Mod+Ctrl+d` - Script selector
 - `Mod+F1` - File manager (PCManFM/Finder)
 - `Mod+F2` - Firefox (Safari on macOS by default)
 - `Mod+F3` - PDF viewer (Skim on macOS)
@@ -80,6 +82,22 @@ This repository contains my dotfiles and configuration for a keyboard-driven Lin
 - Usage: `./scripts/setup-macos.sh`
 
 **Application Scripts:**
+
+**docs-selector.sh**
+- dmenu-based quick reference documentation viewer
+- Searches `.md` and `.txt` files in `~/.dotfiles/docs/`
+- Opens selected doc in kitty with syntax highlighting (bat) or less
+- Usage: `Mod+Shift+d` or `./scripts/docs-selector.sh`
+
+**script-selector.sh**
+- dmenu-based launcher for scripts in `~/.dotfiles/scripts/`
+- Shows script name and description from header comment
+- Usage: `Mod+Ctrl+d` or `./scripts/script-selector.sh`
+
+**tailscale-devices.sh**
+- Display Tailscale devices with names, IPs, and full MagicDNS names
+- Shows online/offline status and device count
+- Usage: `./scripts/tailscale-devices.sh`
 
 **set-vim-default.sh**
 - Creates WezTermVim.app wrapper and sets it as default for text files

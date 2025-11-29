@@ -1,4 +1,6 @@
 #!/bin/sh
+# screen-layout-selecter.sh
+# Select and apply monitor layout via dmenu
 chosenLayout=$(ls ~/.screenlayout/ | sed -e 's/\.sh$//' | dmenu -fn "CaskaydiaCove Nerd Font Mono-10")
 if [[ "$(expr length "$chosenLayout")" != "0" ]]
 then

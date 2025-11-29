@@ -63,6 +63,8 @@ exec --no-startup-id nm-applet
 exec --no-startup-id blueman-applet
 # Pasystray is used to mange volume in PulseAudio
 exec --no-startup-id pasystray
+# Nextcloud sync client
+exec --no-startup-id nextcloud
 
 ### HANDLE MULTIMEDIA AND OTHER SPECIAL KEYS
 # USE "pactl" to manage PulseAudio
@@ -80,9 +82,9 @@ bindsym XF86AudioPrev exec playerctl previous
 bindsym XF86MonBrightnessUp exec --no-startup-id brightnessctl set +10%
 bindsym XF86MonBrightnessDown exec --no-startup-id brightnessctl set 10%-
 # TAKE SCREENSHOTS WITH "maim"
-bindsym Print exec --no-startup-id maim "/home/$USER/Pictures/Screenshot $(date).png"
-bindsym $mod+Print exec --no-startup-id maim --window $(xdotool getactivewindow) "/home/$USER/Pictures/Screenshot $(date).png"
-bindsym Shift+Print exec --no-startup-id maim --select "/home/$USER/Pictures/Screenshot $(date).png"
+bindsym Print exec --no-startup-id maim "/home/$USER/Pictures/Screenshot $(date --iso-8601=seconds).png"
+bindsym $mod+Print exec --no-startup-id maim --window $(xdotool getactivewindow) "/home/$USER/Pictures/Screenshot $(date --iso-8601=seconds).png"
+bindsym Shift+Print exec --no-startup-id maim --select "/home/$USER/Pictures/Screenshot $(date --iso-8601=seconds).png"
 # CLIPBOARD SCREENSHOTS
 bindsym Ctrl+Print exec --no-startup-id maim | xclip -selection clipboard -t image/png
 bindsym Ctrl+$mod+Print exec --no-startup-id maim --window $(xdotool getactivewindow) | xclip -selection clipboard -t image/png
@@ -99,11 +101,11 @@ tiling_drag modifier titlebar
 
 ### Application Keybindings
 # Basic Applications
-bindsym $mod+Return exec urxvt                                  # Terminal (Mod+Enter)
+bindsym $mod+Return exec kitty                                   # Terminal (Mod+Enter)
 bindsym $mod+Shift+Return exec code -n                          # New VSCode window
 bindsym $mod+F1 exec pcmanfm                                    # Graphical File Manager (Mod+F1)
 bindsym $mod+Shift+F1 exec krusader                             # Advanced File Manager (Mod+Shift+F1)
-bindsym $mod+Ctrl+F1 exec urxvt -e "ranger"                     # TUI File Manager (Mod+Ctrl+F1)
+bindsym $mod+Ctrl+F1 exec kitty ranger                          # TUI File Manager (Mod+Ctrl+F1)
 bindsym $mod+F2 exec firefox                                    # Firefox (Mod+F2)
 bindsym $mod+Shift+F2 exec firefox --private-window             # Firefox Private Window (Mod+Shift+F2)
 bindsym $mod+F3 exec thunderbird                                # Thunderbird (Mod+F3)
@@ -117,8 +119,8 @@ bindsym $mod+Shift+F7 exec sh ~/.screenlayout/laptop.sh \
     && xrandr --dpi 96 \
     && feh --bg-fill ~/Pictures/wallpaper.jpg                   # Reset the display to the internal monitor
 # System Management
-bindsym $mod+F12 exec urxvt -e "htop"                           # HTOP task/resource manager
-bindsym $mod+Shift+F12 exec urxvt -e "bpytop"                   # BPyTOP task/resource manager
+bindsym $mod+F12 exec kitty htop                                # HTOP task/resource manager
+bindsym $mod+Shift+F12 exec kitty bpytop                        # BPyTOP task/resource manager
 bindsym XF86ScreenSaver exec i3lock                             # Lock the screen
 
 
@@ -127,6 +129,10 @@ bindsym $mod+Shift+q kill
 
 # start dmenu (a program launcher)
 bindsym $mod+d exec --no-startup-id dmenu_run -fn "CaskaydiaCove Nerd Font Mono-10"
+# Docs/reference selector
+bindsym $mod+Shift+d exec --no-startup-id ~/.dotfiles/scripts/docs-selector.sh
+# Script selector
+bindsym $mod+Ctrl+d exec --no-startup-id ~/.dotfiles/scripts/script-selector.sh
 # A more modern dmenu replacement is rofi:
 # bindcode $mod+40 exec "rofi -modi drun,run -show drun"
 # There also is i3-dmenu-desktop which only displays applications shipping a
