@@ -88,6 +88,10 @@ dotfiles:
     dest: .config/kitty
     description: Kitty terminal config
 
+  - source: .config/helix
+    dest: .config/helix
+    description: Helix editor config
+
   - source: .config/htop
     dest: .config/htop
     description: htop system monitor config

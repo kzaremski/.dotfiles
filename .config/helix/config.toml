@@ -1,0 +1,43 @@
+# Konstantin Zaremski's Helix config
+# Based on my .vimrc preferences
+
+theme = "monokai_pro_machine_transparent"
+
+[editor]
+# Line numbering - relative (like vim hybrid mode in normal mode)
+line-number = "relative"
+# Mouse support
+mouse = true
+# True color support
+true-color = true
+# Cursor shape
+cursorline = true
+# Show bufferline at top
+bufferline = "multiple"
+
+[editor.cursor-shape]
+insert = "bar"
+normal = "block"
+select = "underline"
+
+[editor.indent-guides]
+render = true
+character = "│"
+
+[editor.statusline]
+left = ["mode", "spinner", "file-name", "file-modification-indicator"]
+center = []
+right = ["diagnostics", "selections", "position", "file-encoding", "file-line-ending", "file-type"]
+
+[editor.lsp]
+display-messages = true
+display-inlay-hints = true
+
+[editor.file-picker]
+hidden = false
+
+[editor.soft-wrap]
+enable = true
+
+[editor.whitespace.render]
+tab = "all"

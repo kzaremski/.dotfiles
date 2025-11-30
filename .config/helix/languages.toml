@@ -1,0 +1,26 @@
+# Language-specific settings
+
+# Default indentation - 4 spaces (matching vimrc)
+[[language]]
+name = "rust"
+indent = { tab-width = 4, unit = "    " }
+
+[[language]]
+name = "python"
+indent = { tab-width = 4, unit = "    " }
+
+[[language]]
+name = "javascript"
+indent = { tab-width = 4, unit = "    " }
+
+[[language]]
+name = "typescript"
+indent = { tab-width = 4, unit = "    " }
+
+[[language]]
+name = "go"
+indent = { tab-width = 4, unit = "\t" }
+
+[[language]]
+name = "markdown"
+soft-wrap.enable = true

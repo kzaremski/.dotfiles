@@ -1,0 +1,9 @@
+# Monokai Pro Machine with transparent background
+inherits = "monokai_pro_machine"
+
+"ui.background" = {}
+"ui.statusline" = { fg = "text" }
+"ui.statusline.inactive" = { fg = "base5" }
+"ui.bufferline" = {}
+"ui.bufferline.active" = { fg = "yellow", modifiers = ["bold"] }
+"ui.bufferline.background" = {}
