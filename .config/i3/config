@@ -114,8 +114,8 @@ bindsym $mod+F4 exec libreoffice                                # Libreoffice
 bindsym $mod+Shift+F5 exec surf http://captive.apple.com        # Open the network's captive portal if it has one
 # Display Output Management
 bindsym Shift+F7 exec feh --bg-fill ~/Pictures/wallpaper.jpg    # Reset the wallpaper
-bindsym $mod+F7 exec screen_layout_selector                     # Choose screen layout
-bindsym $mod+Shift+F7 exec sh ~/.screenlayout/laptop.sh \
+bindsym $mod+F7 exec ~/.dotfiles/scripts/screen-layout-selecter.sh  # Choose screen layout
+bindsym $mod+Shift+F7 exec sh ~/.dotfiles/screenlayout/laptop.sh \
     && xrandr --dpi 96 \
     && feh --bg-fill ~/Pictures/wallpaper.jpg                   # Reset the display to the internal monitor
 # Password Manager

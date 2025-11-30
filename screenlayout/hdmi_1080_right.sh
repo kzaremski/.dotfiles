@@ -1,2 +1,4 @@
 #!/bin/sh
+# hdmi_1080_right.sh
+# HDMI 1080p extended to the right of internal display
 xrandr --output LVDS-1 --primary --mode 1366x768 --pos 0x156 --rotate normal --output VGA-1 --off --output HDMI-1 --mode 1920x1080 --pos 1366x0 --rotate normal --output DP-1 --off --output HDMI-2 --off --output HDMI-3 --off --output DP-2 --off --output DP-3 --off

@@ -1,14 +1,38 @@
 #!/bin/sh
 # screen-layout-selecter.sh
 # Select and apply monitor layout via dmenu
-chosenLayout=$(ls ~/.screenlayout/ | sed -e 's/\.sh$//' | dmenu -fn "CaskaydiaCove Nerd Font Mono-10")
-if [[ "$(expr length "$chosenLayout")" != "0" ]]
-then
-	echo "Switching layout to: $chosenLayout.sh"
-	# Run the chosen screen layout set script
-	sh ~/.screenlayout/$chosenLayout.sh
-	# Set the wallpaper
-	feh --bg-fill ~/Pictures/wallpaper.jpg
-	exit
-fi
-echo "No layout selected."
+
+LAYOUTS_DIR="$HOME/.dotfiles/screenlayout"
+
+# Build list of layouts with descriptions
+layout_list=""
+for layout in "$LAYOUTS_DIR"/*.sh; do
+    [ -f "$layout" ] || continue
+    name=$(basename "$layout" .sh)
+
+    # Extract description from line 3 (after shebang and filename)
+    desc=$(sed -n '3s/^#\s*//p' "$layout" 2>/dev/null)
+
+    if [ -n "$desc" ]; then
+        layout_list="$layout_list$name | $desc
+"
+    else
+        layout_list="$layout_list$name
+"
+    fi
+done
+
+# Show dmenu and get selection
+selected=$(echo -n "$layout_list" | dmenu -i -l 10 -p "Layout:" -fn "CaskaydiaCove Nerd Font Mono-10")
+
+# Exit if nothing selected
+[ -z "$selected" ] && exit 0
+
+# Extract layout name (before the | if present)
+layout_name=$(echo "$selected" | cut -d'|' -f1 | xargs)
+
+echo "Switching layout to: $layout_name.sh"
+# Run the chosen screen layout set script
+sh "$LAYOUTS_DIR/$layout_name.sh"
+# Set the wallpaper
+feh --bg-fill ~/Pictures/wallpaper.jpg
