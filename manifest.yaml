@@ -9,6 +9,11 @@
 # To add a new dotfile, simply add a new entry to this list.
 
 dotfiles:
+  # Git configuration
+  - source: .gitignore_global
+    dest: .gitignore_global
+    description: Global gitignore (ignores .claude, OS files, etc.)
+
   # Shell configurations
   - source: .bashrc
     dest: .bashrc

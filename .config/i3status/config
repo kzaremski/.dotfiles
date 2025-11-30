@@ -18,7 +18,7 @@ order += "battery all"
 order += "disk /"
 #order += "load"
 order += "cpu_usage"
-#order += "cpu_temperature 0"
+order += "cpu_temperature 0"
 order += "memory"
 order += "tztime local"
 
@@ -52,7 +52,7 @@ cpu_usage {
 }
 
 cpu_temperature 0 {
-	path = "/sys/devices/platform/coretemp.0/hwmon/hwmon5/temp1_input"
+	path = "/sys/class/hwmon/hwmon4/temp1_input"
 	format = "TEMP %degrees°C"
 }
 
