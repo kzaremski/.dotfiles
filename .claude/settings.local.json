@@ -13,7 +13,9 @@
       "Bash(echo:*)",
       "Bash(flatpak list:*)",
       "Bash(mkdir:*)",
-      "Bash(git config:*)"
+      "Bash(git config:*)",
+      "Bash(command -v:*)",
+      "Bash(gpg-connect-agent:*)"
     ],
     "deny": [],
     "ask": []

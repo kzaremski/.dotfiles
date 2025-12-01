@@ -1,4 +1,5 @@
-# Claude Code (keep .claude/commands, ignore the rest)
+# Claude Code (use claude/ folder for commands, ignore .claude/ entirely)
+.claude/
 CLAUDE.md
 
 # Python

@@ -129,7 +129,5 @@ alias tmux-dev="tmux-layout dev"
 alias tmux-monitor="tmux-layout monitor"
 alias tmux-simple="tmux-layout simple"
 
-# SSH agent via keychain
-eval $(keychain --eval --quiet id_ed25519)
-
 export PATH="/home/kzaremski/.npm-global/bin:/home/kzaremski/.cargo/bin:/home/kzaremski/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/cxoffice/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl"
+export GPG_TTY=$(tty)

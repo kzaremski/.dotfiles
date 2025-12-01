@@ -66,6 +66,10 @@ exec --no-startup-id pasystray
 # Nextcloud sync client
 exec --no-startup-id nextcloud
 
+### SSH AGENT SETUP
+# Launch terminal to unlock SSH keys at startup
+exec --no-startup-id kitty --title "SSH Agent Setup" -e ~/.dotfiles/scripts/ssh-agent-setup.sh
+
 ### HANDLE MULTIMEDIA AND OTHER SPECIAL KEYS
 # USE "pactl" to manage PulseAudio
 set $refresh_i3status killall -SIGUSR1 i3status
