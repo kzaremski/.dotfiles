@@ -1,9 +1,9 @@
 # Global gitignore
 # Managed by ~/.dotfiles
 
-# Claude Code
-.claude/
+# Claude Code (project-specific files, not global ~/.claude)
 CLAUDE.md
+.claude/settings.local.json
 
 # macOS
 .DS_Store
