@@ -1,5 +1,6 @@
 ! Font
 URxvt.font:         xft:CaskaydiaCove Nerd Font:pixelsize=12.5
+Xft.dpi: 96
 
 ! Dimensions
 URxvt.geometry:   110x35

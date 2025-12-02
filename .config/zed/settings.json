@@ -28,11 +28,11 @@
   "base_keymap": "VSCode",
   "vim_mode": false,
   "ui_font_size": 16,
-  "buffer_font_size": 12,
-  "buffer_font_family": "Cascadia Code",
+  "buffer_font_size": 13.0,
+  "buffer_font_family": "CaskaydiaCove Nerd Font Mono",
   "theme": {
     "mode": "system",
-    "light": "Ayu Light",
+    "light": "Ayu Dark",
     "dark": "Ayu Dark"
   }
 }
