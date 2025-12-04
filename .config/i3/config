@@ -55,6 +55,10 @@ exec --no-startup-id xset s noblank
 # screen before suspend. Use loginctl lock-session to lock your screen.
 exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
 
+### POLKIT AUTHENTICATION AGENT
+# Required for graphical password prompts when using pkexec
+exec --no-startup-id /usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1
+
 ### SYSTEM TRAY ICONS
 # NetworkManager is the most popular way to manage wireless networks on Linux,
 # and nm-applet is a desktop environment-independent system tray GUI for it.
@@ -118,8 +122,8 @@ bindsym $mod+F7 exec ~/.dotfiles/scripts/screen-layout-selecter.sh  # Choose scr
 bindsym $mod+Shift+F7 exec sh ~/.dotfiles/screenlayout/laptop.sh \
     && xrandr --dpi 96 \
     && feh --bg-fill ~/Pictures/wallpaper.jpg                   # Reset the display to the internal monitor
-# Password Manager
-bindsym $mod+F10 exec keepassxc                                 # KeePassXC password manager
+# Password Manager (Mod+` to launch/focus, opens on dedicated KPXC workspace)
+# bindsym $mod+F10 exec keepassxc
 # System Management
 bindsym $mod+F12 exec kitty htop                                # HTOP task/resource manager
 bindsym $mod+Shift+F12 exec kitty bpytop                        # BPyTOP task/resource manager
@@ -131,6 +135,8 @@ bindsym $mod+Shift+q kill
 
 # start dmenu (a program launcher)
 bindsym $mod+d exec --no-startup-id dmenu_run -fn "CaskaydiaCove Nerd Font Mono-10"
+# Sudo launcher (run apps as root with pkexec)
+bindsym $mod+Shift+s exec --no-startup-id ~/.dotfiles/scripts/sudo-launcher.sh
 # Docs/reference selector
 bindsym $mod+Shift+d exec --no-startup-id ~/.dotfiles/scripts/docs-selector.sh
 # Script selector
@@ -248,10 +254,11 @@ bindsym $mod+Shift+r restart
 
 # resize window (you can also use the mouse for that)
 bindsym $mod+Shift+e mode "$mode_system"
-set $mode_system SYSTEM (L)ock, (S)uspend, (E)xit, (R)eboot, (Shift+S)hutdown
+set $mode_system SYSTEM (L)ock, (S)uspend, (H)ibernate, (E)xit, (R)eboot, (Shift+S)hutdown
 mode "$mode_system" {
     bindsym l exec --no-startup-id i3lock, mode "default"
     bindsym s exec --no-startup-id systemctl suspend, mode "default"
+    bindsym h exec --no-startup-id systemctl hibernate, mode "default"
     bindsym e exit
     bindsym r exec --no-startup-id reboot, mode "default"
     bindsym Shift+s exec --no-startup-id poweroff, mode "default"
@@ -301,8 +308,14 @@ gaps inner 8
 # WINDOW TITLES
 for_window [class=".*"] title_format " %title"
 
+# KeePassXC always opens on its own workspace (dedicated/isolated)
+set $wsKPXC "KPXC"
+assign [class="KeePassXC"] $wsKPXC
+# Mod+` to launch KeePassXC or switch to its workspace
+bindsym $mod+grave exec --no-startup-id "pgrep -x keepassxc && i3-msg workspace KPXC || keepassxc"
+
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
 bar {
-        status_command i3status
+        status_command py3status -i ~/.config/py3status/modules/
 }

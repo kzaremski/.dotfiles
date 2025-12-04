@@ -13,12 +13,11 @@ general {
 
 #order += "ipv6"
 order += "wireless _first_"
-order += "ethernet _first_"
-order += "battery all"
+order += "eth_cycle"
+order += "battery_cycle"
 order += "disk /"
 #order += "load"
-order += "cpu_usage"
-order += "cpu_temperature 0"
+order += "cpu_cycle"
 order += "memory"
 order += "tztime local"
 
@@ -28,13 +27,24 @@ wireless _first_ {
 	format_up = "WLAN %ip"
 }
 
-ethernet _first_ {
-        format_up = "LAN %ip (%speed)"
+# eth_cycle module configuration (py3status custom module)
+eth_cycle {
+        interface = "_first_"
+        cycle_interval = 2
+        format_ip = "LAN {ip}"
+        format_speed = "LAN {speed}"
         format_down = "NO LAN"
 }
 
-battery all {
-        format = "%status %percentage %remaining"
+# battery_cycle module configuration (py3status custom module)
+battery_cycle {
+        cycle_interval = 2
+        format_percent = "BAT {percent}%"
+        format_time = "BAT {time}"
+        format_charging = "CHG {percent}%"
+        format_full = "FULL"
+        good_threshold = 70
+        degraded_threshold = 30
 }
 
 disk "/" {
@@ -45,15 +55,14 @@ load {
         format = "%1min"
 }
 
-cpu_usage {
-	format = "CPU %usage"
-	max_threshold = 90
+# cpu_cycle module configuration (py3status custom module)
+cpu_cycle {
+	cycle_interval = 2
+	temp_path = "/sys/class/hwmon/hwmon4/temp1_input"
+	format_usage = "CPU {usage}%"
+	format_temp = "CPU {temp}°C"
 	degraded_threshold = 75
-}
-
-cpu_temperature 0 {
-	path = "/sys/class/hwmon/hwmon4/temp1_input"
-	format = "TEMP %degrees°C"
+	max_threshold = 90
 }
 
 memory {

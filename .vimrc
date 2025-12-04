@@ -75,6 +75,11 @@ autocmd VimEnter,ColorScheme * call ApplyTransparency()
 " #####################
 " ## BASIC SETTINGS  ##
 " #####################
+" Encoding - required for special characters and powerline symbols
+set encoding=utf-8
+set fileencoding=utf-8
+set termencoding=utf-8
+
 " Enable syntax highlighting and filetype detection
 syntax enable
 filetype plugin indent on
@@ -132,6 +137,9 @@ nnoremap <F1> :Manual<CR>
 " #####################
 " ## PLUGIN CONFIG   ##
 " #####################
+" Airline: Use powerline fonts (Nerd Font includes these glyphs)
+let g:airline_powerline_fonts = 1
+
 " ALE: Disable completion and LSP features (we're not using LSP/asyncomplete)
 let g:ale_completion_enabled = 0
 let g:ale_disable_lsp = 1
