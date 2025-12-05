@@ -23,7 +23,7 @@ font pango:CaskaydiaCove Nerd Font 10
 exec XDG_MENU_PREFIX=arch- kbuildsycoca6
 
 ### SET THE WALLPAPER
-exec --no-startup-id feh --bg-fill ~/Pictures/wallpaper.jpg
+exec --no-startup-id feh --bg-fill ~/.wallpaper
 
 ### Reload Xresources
 # This is useful for reconfiguring programs that depend on XresourceS
@@ -117,11 +117,11 @@ bindsym $mod+F4 exec libreoffice                                # Libreoffice
 # Captive Portal Detection
 bindsym $mod+Shift+F5 exec surf http://captive.apple.com        # Open the network's captive portal if it has one
 # Display Output Management
-bindsym Shift+F7 exec feh --bg-fill ~/Pictures/wallpaper.jpg    # Reset the wallpaper
+bindsym Shift+F7 exec --no-startup-id ~/.dotfiles/scripts/wallpaper-selector.sh  # Wallpaper selector
 bindsym $mod+F7 exec ~/.dotfiles/scripts/screen-layout-selecter.sh  # Choose screen layout
 bindsym $mod+Shift+F7 exec sh ~/.dotfiles/screenlayout/laptop.sh \
     && xrandr --dpi 96 \
-    && feh --bg-fill ~/Pictures/wallpaper.jpg                   # Reset the display to the internal monitor
+    && ~/.dotfiles/scripts/wallpaper-selector.sh reset          # Reset display to internal monitor
 # Password Manager (Mod+` to launch/focus, opens on dedicated KPXC workspace)
 # bindsym $mod+F10 exec keepassxc
 # System Management
@@ -222,6 +222,8 @@ workspace $ws9 output VGA-1
 workspace $ws10 output VGA-1
 
 # switch to workspace
+bindsym $mod+Tab workspace back_and_forth
+bindsym Mod1+Tab exec --no-startup-id ~/.dotfiles/scripts/window-switcher.sh
 bindsym $mod+1 workspace number $ws1
 bindsym $mod+2 workspace number $ws2
 bindsym $mod+3 workspace number $ws3
