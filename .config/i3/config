@@ -311,8 +311,8 @@ for_window [class=".*"] title_format " %title"
 # KeePassXC always opens on its own workspace (dedicated/isolated)
 set $wsKPXC "KPXC"
 assign [class="KeePassXC"] $wsKPXC
-# Mod+` to launch KeePassXC or switch to its workspace
-bindsym $mod+grave exec --no-startup-id "pgrep -x keepassxc && i3-msg workspace KPXC || keepassxc"
+# Mod+` to launch KeePassXC or move its workspace to current monitor
+bindsym $mod+grave exec --no-startup-id "pgrep -x keepassxc && i3-msg '[class=KeePassXC] move workspace to output current, workspace KPXC' || (keepassxc & sleep 0.5 && i3-msg '[class=KeePassXC] focus')"
 
 # Start i3bar to display a workspace bar (plus the system information i3status
 # finds out, if available)
