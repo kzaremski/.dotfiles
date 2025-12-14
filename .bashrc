@@ -23,5 +23,3 @@ elif [ -z "$SSH_AUTH_SOCK" ]; then
     # Last resort: start ssh-agent
     eval "$(ssh-agent -s)" &>/dev/null
 fi
-
-source /home/kzaremski/.config/broot/launcher/bash/br

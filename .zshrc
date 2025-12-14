@@ -115,9 +115,6 @@ if [ -d "$HOME/.cargo/bin" ]; then
   export PATH="$HOME/.cargo/bin:$PATH"
 fi
 
-# Aliases
-alias skim='open -a Skim'
-
 # Tmux layout launcher
 # Usage: tmux-layout [layout] [session_name] [directory]
 if [ -f "$HOME/.tmux/tmux-layout" ]; then
@@ -132,9 +129,6 @@ alias tmux-simple="tmux-layout simple"
 export PATH="/home/kzaremski/.npm-global/bin:/home/kzaremski/.cargo/bin:/home/kzaremski/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/cxoffice/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl"
 export GPG_TTY=$(tty)
 
-# opencode
-export PATH=/home/kzaremski/.opencode/bin:$PATH
-
 # SSH Agent Setup (KeePassXC → keychain → ssh-agent fallback)
 if [ -S "${XDG_RUNTIME_DIR}/ssh-agent.socket" ]; then
     # KeePassXC SSH agent
@@ -146,5 +140,3 @@ elif [ -z "$SSH_AUTH_SOCK" ]; then
     # Last resort: start ssh-agent
     eval "$(ssh-agent -s)" &>/dev/null
 fi
-
-source /home/kzaremski/.config/broot/launcher/bash/br
