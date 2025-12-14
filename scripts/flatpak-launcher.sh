@@ -18,7 +18,7 @@ if [ -z "$app_list" ]; then
 fi
 
 # Show dmenu and get selection
-selected=$(echo "$app_list" | dmenu -i -l 15 -p "Flatpak:" -fn "CaskaydiaCove Nerd Font Mono-10")
+selected=$(echo "$app_list" | dmenu -i -l 15 -p "Flatpak:" -fn "Terminus-10")
 
 # Exit if nothing selected
 [ -z "$selected" ] && exit 0

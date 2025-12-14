@@ -16,19 +16,19 @@ y = 2
 size = 10.0
 
 [font.bold]
-family = "JetBrainsMono Nerd Font"
-style = "Heavy"
+family = "Terminus"
+style = "Bold"
 
 [font.bold_italic]
-family = "JetBrainsMono Nerd Font"
-style = "Heavy Italic"
+family = "Terminus"
+style = "Bold"
 
 [font.italic]
-family = "JetBrainsMono Nerd Font"
-style = "Medium Italic"
+family = "Terminus"
+style = "Regular"
 
 [font.normal]
-family = "JetBrainsMono Nerd Font"
-style = "Medium"
+family = "Terminus"
+style = "Regular"
 
 

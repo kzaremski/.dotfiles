@@ -56,11 +56,18 @@ def format_output(data):
     # Peers
     peers = data.get("Peer", {})
     for peer_id, peer in peers.items():
-        name = peer.get("HostName", "unknown")
+        # Use DNSName to get the actual device name (HostName is "localhost" for mobile devices)
+        dns_name = peer.get("DNSName", "")
+        if dns_name:
+            # DNSName is like "device-name.tailnet.ts.net." - extract first part
+            name = dns_name.split(".")[0]
+            full_name = dns_name.rstrip(".")
+        else:
+            name = peer.get("HostName", "unknown")
+            full_name = f"{name}.{suffix}" if suffix else name
         ips = peer.get("TailscaleIPs", [])
         ip = ips[0] if ips else "N/A"
         online = peer.get("Online", False)
-        full_name = f"{name}.{suffix}" if suffix else name
         devices.append((name, ip, full_name, False, online))
 
     # Sort: self first, then online devices, then offline

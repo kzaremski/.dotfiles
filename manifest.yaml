@@ -51,6 +51,23 @@ dotfiles:
     dest: .Xresources
     description: X resources (URxvt, colors, fonts)
 
+  # GTK/Qt font rendering
+  - source: .config/gtk-3.0/settings.ini
+    dest: .config/gtk-3.0/settings.ini
+    description: GTK3 settings (Terminus font)
+
+  - source: .gtkrc-2.0
+    dest: .gtkrc-2.0
+    description: GTK2 settings (Terminus font)
+
+  - source: .config/qt5ct/qt5ct.conf
+    dest: .config/qt5ct/qt5ct.conf
+    description: Qt5 settings (Terminus font)
+
+  - source: .config/fontconfig
+    dest: .config/fontconfig
+    description: Fontconfig (disable AA for Terminus only)
+
   # Terminal configurations
   - source: .wezterm.lua
     dest: .wezterm.lua
@@ -63,15 +80,6 @@ dotfiles:
   - source: .tmux
     dest: .tmux
     description: tmux layout configurations and scripts
-
-  # Window manager configurations
-  - source: .aerospace.toml
-    dest: .aerospace.toml
-    description: Aerospace window manager config (macOS)
-
-  - source: com.knollsoft.Rectangle.plist
-    dest: Library/Preferences/com.knollsoft.Rectangle.plist
-    description: Rectangle window manager config (macOS)
 
   # LaTeX configuration
   - source: .latexmkrc

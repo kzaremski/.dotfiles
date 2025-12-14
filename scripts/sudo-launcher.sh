@@ -10,7 +10,7 @@ apps=(
     "dconf-editor | dconf settings editor"
     "pcmanfm | File manager (as root)"
     "thunar | File manager (as root)"
-    "kitty | Terminal (as root)"
+    "urxvt | Terminal (as root)"
     "pavucontrol | PulseAudio volume control"
     "blueman-manager | Bluetooth manager"
 )
@@ -22,7 +22,7 @@ for app in "${apps[@]}"; do
 done
 
 # Show dmenu and get selection
-selected=$(echo -n "$menu" | dmenu -i -l 15 -p "Run as root:" -fn "CaskaydiaCove Nerd Font Mono-10")
+selected=$(echo -n "$menu" | dmenu -i -l 15 -p "Run as root:" -fn "Terminus-10")
 
 # Exit if nothing selected
 [ -z "$selected" ] && exit 0

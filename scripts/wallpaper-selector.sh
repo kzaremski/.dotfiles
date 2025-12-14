@@ -100,7 +100,7 @@ menu="[Reset current: $current]"$'\n'"$wallpapers"
 
 # Choose selector: dmenu if in X, fzf otherwise
 if [ -n "$DISPLAY" ] && command -v dmenu &> /dev/null; then
-    selected=$(echo "$menu" | dmenu -i -l 15 -p "Wallpaper:" -fn "CaskaydiaCove Nerd Font Mono-10")
+    selected=$(echo "$menu" | dmenu -i -l 15 -p "Wallpaper:" -fn "Terminus-10")
 else
     if ! command -v fzf &> /dev/null; then
         echo "Error: dmenu or fzf required"
@@ -138,7 +138,7 @@ Center (centered, no scaling)
 Tile (repeat pattern)"
 
 if [ -n "$DISPLAY" ] && command -v dmenu &> /dev/null; then
-    selected_style=$(echo "$styles" | dmenu -i -l 6 -p "Style:" -fn "CaskaydiaCove Nerd Font Mono-10")
+    selected_style=$(echo "$styles" | dmenu -i -l 6 -p "Style:" -fn "Terminus-10")
 else
     selected_style=$(echo "$styles" | fzf --prompt="Style: " --height=30%)
 fi

@@ -23,7 +23,7 @@ for layout in "$LAYOUTS_DIR"/*.sh; do
 done
 
 # Show dmenu and get selection
-selected=$(echo -n "$layout_list" | dmenu -i -l 10 -p "Layout:" -fn "CaskaydiaCove Nerd Font Mono-10")
+selected=$(echo -n "$layout_list" | dmenu -i -l 10 -p "Layout:" -fn "Terminus-10")
 
 # Exit if nothing selected
 [ -z "$selected" ] && exit 0
@@ -34,5 +34,5 @@ layout_name=$(echo "$selected" | cut -d'|' -f1 | xargs)
 echo "Switching layout to: $layout_name.sh"
 # Run the chosen screen layout set script
 sh "$LAYOUTS_DIR/$layout_name.sh"
-# Set the wallpaper
-feh --bg-fill ~/Pictures/wallpaper.jpg
+# Reapply wallpaper with user's settings
+"$HOME/.dotfiles/scripts/wallpaper-selector.sh" -r

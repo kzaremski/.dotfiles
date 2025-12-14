@@ -43,7 +43,7 @@ take_screenshot() {
                 notify "Error: xdotool required for window capture"
                 exit 1
             fi
-            maim_args="--window $(xdotool getactivewindow)"
+            maim_args="--window $(xdotool getactivewindow) --nodecorations=0"
             ;;
         *)
             notify "Error: Invalid mode"
@@ -90,7 +90,7 @@ modes="Fullscreen
 Area (select)
 Window (active)"
 
-selected_mode=$(echo "$modes" | dmenu -i -l 3 -p "Capture:" -fn "CaskaydiaCove Nerd Font Mono-10")
+selected_mode=$(echo "$modes" | dmenu -i -l 3 -p "Capture:" -fn "Terminus-10")
 [ -z "$selected_mode" ] && exit 0
 
 case "$selected_mode" in
@@ -104,7 +104,7 @@ outputs="Both (save & clipboard)
 Clipboard only
 Save to disk only"
 
-selected_output=$(echo "$outputs" | dmenu -i -l 3 -p "Output:" -fn "CaskaydiaCove Nerd Font Mono-10")
+selected_output=$(echo "$outputs" | dmenu -i -l 3 -p "Output:" -fn "Terminus-10")
 [ -z "$selected_output" ] && exit 0
 
 case "$selected_output" in

@@ -1,46 +1,66 @@
-! Font
-URxvt.font:         xft:CaskaydiaCove Nerd Font:pixelsize=12.5
-Xft.dpi: 96
+! Font - Terminus with no anti-aliasing for crisp ASCII aesthetic
+URxvt.font:         xft:Terminus:size=10:antialias=false:hinting=false
 
-! Dimensions
-URxvt.geometry:   110x35
-URxvt.scrollBar:  false
+! Global Xft font rendering - AA enabled by default (Terminus uses fontconfig override)
+Xft.dpi:        96
+Xft.antialias:  true
+Xft.hinting:    true
+Xft.hintstyle:  hintslight
+Xft.rgba:       rgb
+Xft.lcdfilter:  lcddefault
 
-! Special
+! URxvt settings
+URxvt.geometry:     110x35
+URxvt.scrollBar:    false
 URxvt.depth:        32
-URxvt.foreground:   #E5E9F0
-URxvt.background:   rgba:0000/0000/0000/c800
-URxvt.cursorColor:  #E5E9F0
+URxvt.termName:     rxvt-256color
+
+! Perl extensions for URL clicking and copy/paste
+URxvt.perl-ext-common: default,matcher,selection-to-clipboard
+URxvt.url-launcher:    firefox
+URxvt.matcher.button:  1
+URxvt.matcher.rend.0:  Uline fg7
+
+! Keybindings - Ctrl+Shift+C/V for copy/paste
+URxvt.keysym.Shift-Control-V: eval:paste_clipboard
+URxvt.keysym.Shift-Control-C: eval:selection_to_clipboard
+URxvt.iso14755:    false
+URxvt.iso14755_52: false
+
+! Colors - matching wezterm/kitty Pro theme
+URxvt.foreground:   #f0f0f0
+URxvt.background:   [80]#000000
+URxvt.cursorColor:  #4ae0aa
 
 ! black
-URxvt.color0:       rgba:0000/0000/0000/c800
-!URxvt.color8: #4C566A
+URxvt.color0:       #000000
+URxvt.color8:       #767676
 
 ! red
-!URxvt.color1: #88C0D0
-!URxvt.color9: #88C0D0
+URxvt.color1:       #cc0000
+URxvt.color9:       #f54444
 
 ! green
-!URxvt.color2:  #BF616A
-!URxvt.color10: #BF616A
+URxvt.color2:       #4ae0aa
+URxvt.color10:      #5fd787
 
 ! yellow
-!URxvt.color3:  #5E81AC
-!URxvt.color11: #5E81AC
+URxvt.color3:       #d7af5f
+URxvt.color11:      #ffd75f
 
 ! blue
-!URxvt.color4:  #EBCB8B
-!URxvt.color12: #EBCB8B
+URxvt.color4:       #5496ff
+URxvt.color12:      #5fafd7
 
 ! magenta
-!URxvt.color5:  #A3BE8C
-!URxvt.color13: #A3BE8C
+URxvt.color5:       #c678dd
+URxvt.color13:      #d787d7
 
 ! cyan
-!URxvt.color6:  #D08770
-!URxvt.color14: #D08770
+URxvt.color6:       #00d7ff
+URxvt.color14:      #5fd7ff
 
 ! white
-!URxvt.color7:  #E5E9F0
-!URxvt.color15: #8FBCBB
+URxvt.color7:       #ffffff
+URxvt.color15:      #ffffff
 

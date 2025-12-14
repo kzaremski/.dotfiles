@@ -1,7 +1,7 @@
 #!/bin/bash
 # docs-selector.sh
 # dmenu-based documentation/reference viewer
-# Opens selected doc in kitty with less
+# Opens selected doc in urxvt with less
 
 DOCS_DIR="${DOCS_DIR:-$HOME/.dotfiles/docs}"
 
@@ -15,7 +15,7 @@ fi
 selected=$(find "$DOCS_DIR" -type f -name "*.md" -o -name "*.txt" | \
     sed "s|$DOCS_DIR/||" | \
     sort | \
-    dmenu -i -l 20 -p "Docs:" -fn "CaskaydiaCove Nerd Font Mono-10")
+    dmenu -i -l 20 -p "Docs:" -fn "Terminus-10")
 
 # Exit if nothing selected
 [ -z "$selected" ] && exit 0
@@ -29,9 +29,9 @@ if [ ! -f "$doc_path" ]; then
     exit 1
 fi
 
-# Open in kitty with less (or bat if available for syntax highlighting)
+# Open in urxvt with less (or bat if available for syntax highlighting)
 if command -v bat &> /dev/null; then
-    kitty --title "Docs: $selected" bat --paging=always "$doc_path"
+    urxvt -title "Docs: $selected" -e bat --paging=always "$doc_path"
 else
-    kitty --title "Docs: $selected" less "$doc_path"
+    urxvt -title "Docs: $selected" -e less "$doc_path"
 fi

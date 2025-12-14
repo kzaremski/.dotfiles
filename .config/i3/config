@@ -17,7 +17,7 @@ set $mod Mod4
 
 # Font for window titles. Will also be used by the bar unless a different font
 # is used in the bar {} block below.
-font pango:CaskaydiaCove Nerd Font 10
+font pango:Terminus 10
 
 ### Dolphin Open-With Dialog Fix
 exec XDG_MENU_PREFIX=arch- kbuildsycoca6
@@ -28,6 +28,9 @@ exec --no-startup-id feh --bg-fill ~/.wallpaper
 ### Reload Xresources
 # This is useful for reconfiguring programs that depend on XresourceS
 exec xrdb $HOME/.Xresources
+
+### Qt5 theming via qt5ct
+exec --no-startup-id dbus-update-activation-environment --all
 
 ### START CONKY STATUS
 # exec --no-startup-id conky
@@ -53,7 +56,11 @@ exec --no-startup-id xset s noblank
 
 # xss-lock grabs a logind suspend inhibit lock and will use i3lock to lock the
 # screen before suspend. Use loginctl lock-session to lock your screen.
-exec --no-startup-id xss-lock --transfer-sleep-lock -- i3lock --nofork
+exec --no-startup-id xss-lock --transfer-sleep-lock -- ~/.dotfiles/scripts/lock.sh --nofork
+
+### SSH AGENT
+# Start ssh-agent with fixed socket path for KeePassXC and shells to use
+exec --no-startup-id ssh-agent -a $XDG_RUNTIME_DIR/ssh-agent.socket
 
 ### POLKIT AUTHENTICATION AGENT
 # Required for graphical password prompts when using pkexec
@@ -69,10 +76,6 @@ exec --no-startup-id blueman-applet
 exec --no-startup-id pasystray
 # Nextcloud sync client
 exec --no-startup-id nextcloud
-
-### SSH AGENT SETUP
-# Launch terminal to unlock SSH keys at startup
-exec --no-startup-id kitty --title "SSH Agent Setup" -e ~/.dotfiles/scripts/ssh-agent-setup.sh
 
 ### HANDLE MULTIMEDIA AND OTHER SPECIAL KEYS
 # USE "pactl" to manage PulseAudio
@@ -105,15 +108,16 @@ tiling_drag modifier titlebar
 
 ### Application Keybindings
 # Basic Applications
-bindsym $mod+Return exec kitty                                   # Terminal (Mod+Enter)
+bindsym $mod+Return exec urxvt                                   # Terminal (Mod+Enter)
 bindsym $mod+Shift+Return exec code -n                          # New VSCode window
 bindsym $mod+F1 exec pcmanfm                                    # Graphical File Manager (Mod+F1)
 bindsym $mod+Shift+F1 exec krusader                             # Advanced File Manager (Mod+Shift+F1)
-bindsym $mod+Ctrl+F1 exec kitty ranger                          # TUI File Manager (Mod+Ctrl+F1)
+bindsym $mod+Ctrl+F1 exec urxvt -e ranger                       # TUI File Manager (Mod+Ctrl+F1)
 bindsym $mod+F2 exec firefox                                    # Firefox (Mod+F2)
-bindsym $mod+Shift+F2 exec firefox --private-window             # Firefox Private Window (Mod+Shift+F2)
+bindsym $mod+Shift+F2 exec chromium                             # Chromium (Mod+Shift+F2)
 bindsym $mod+F3 exec thunderbird                                # Thunderbird (Mod+F3)
-bindsym $mod+F4 exec libreoffice                                # Libreoffice
+bindsym $mod+F4 exec QOwnNotes                                  # QOwnNotes (Mod+F4)
+bindsym $mod+F5 exec libreoffice                                # LibreOffice (Mod+F5)
 # Captive Portal Detection
 bindsym $mod+Shift+F5 exec surf http://captive.apple.com        # Open the network's captive portal if it has one
 # Display Output Management
@@ -125,22 +129,22 @@ bindsym $mod+Shift+F7 exec sh ~/.dotfiles/screenlayout/laptop.sh \
 # Password Manager (Mod+` to launch/focus, opens on dedicated KPXC workspace)
 # bindsym $mod+F10 exec keepassxc
 # System Management
-bindsym $mod+F12 exec kitty htop                                # HTOP task/resource manager
-bindsym $mod+Shift+F12 exec kitty bpytop                        # BPyTOP task/resource manager
-bindsym XF86ScreenSaver exec i3lock                             # Lock the screen
+bindsym $mod+F12 exec urxvt -e htop                             # HTOP task/resource manager
+bindsym $mod+Shift+F12 exec urxvt -e bpytop                     # BPyTOP task/resource manager
+bindsym XF86ScreenSaver exec ~/.dotfiles/scripts/lock.sh        # Lock the screen
 
 
 # kill focused window
 bindsym $mod+Shift+q kill
 
 # start dmenu (a program launcher)
-bindsym $mod+d exec --no-startup-id dmenu_run -fn "CaskaydiaCove Nerd Font Mono-10"
+bindsym $mod+d exec --no-startup-id dmenu_run -fn "Terminus-10"
 # Sudo launcher (run apps as root with pkexec)
 bindsym $mod+Shift+s exec --no-startup-id ~/.dotfiles/scripts/sudo-launcher.sh
-# Docs/reference selector
-bindsym $mod+Shift+d exec --no-startup-id ~/.dotfiles/scripts/docs-selector.sh
 # Script selector
-bindsym $mod+Ctrl+d exec --no-startup-id ~/.dotfiles/scripts/script-selector.sh
+bindsym $mod+Shift+d exec --no-startup-id ~/.dotfiles/scripts/script-selector.sh
+# Docs/reference selector
+bindsym $mod+Ctrl+d exec --no-startup-id ~/.dotfiles/scripts/docs-selector.sh
 # A more modern dmenu replacement is rofi:
 # bindcode $mod+40 exec "rofi -modi drun,run -show drun"
 # There also is i3-dmenu-desktop which only displays applications shipping a
@@ -258,7 +262,7 @@ bindsym $mod+Shift+r restart
 bindsym $mod+Shift+e mode "$mode_system"
 set $mode_system SYSTEM (L)ock, (S)uspend, (H)ibernate, (E)xit, (R)eboot, (Shift+S)hutdown
 mode "$mode_system" {
-    bindsym l exec --no-startup-id i3lock, mode "default"
+    bindsym l exec --no-startup-id ~/.dotfiles/scripts/lock.sh, mode "default"
     bindsym s exec --no-startup-id systemctl suspend, mode "default"
     bindsym h exec --no-startup-id systemctl hibernate, mode "default"
     bindsym e exit

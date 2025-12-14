@@ -134,3 +134,17 @@ export GPG_TTY=$(tty)
 
 # opencode
 export PATH=/home/kzaremski/.opencode/bin:$PATH
+
+# SSH Agent Setup (KeePassXC → keychain → ssh-agent fallback)
+if [ -S "${XDG_RUNTIME_DIR}/ssh-agent.socket" ]; then
+    # KeePassXC SSH agent
+    export SSH_AUTH_SOCK="${XDG_RUNTIME_DIR}/ssh-agent.socket"
+elif command -v keychain &>/dev/null; then
+    # Fallback to keychain for headless servers
+    eval "$(keychain --eval --quiet --agents ssh id_ed25519 2>/dev/null)"
+elif [ -z "$SSH_AUTH_SOCK" ]; then
+    # Last resort: start ssh-agent
+    eval "$(ssh-agent -s)" &>/dev/null
+fi
+
+source /home/kzaremski/.config/broot/launcher/bash/br

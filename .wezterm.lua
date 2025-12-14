@@ -8,23 +8,16 @@ local config = wezterm.config_builder()
 -- FONT CONFIGURATION
 -- ==================
 
--- Font configuration with fallbacks
--- First try Nerd Font version (has icons), fallback to regular Cascadia,
--- then use WezTerm's built-in glyphs for any missing symbols
+-- Font configuration
 config.font = wezterm.font_with_fallback({
-  'CaskaydiaCove Nerd Font Mono',  -- Nerd Font on macOS
-  'CaskaydiaCove Nerd Font',       -- Nerd Font on Linux
-  'Cascadia Mono',                 -- Regular Cascadia (fallback)
-  'Cascadia Code',                 -- Another fallback
-  'Menlo',                         -- macOS system monospace
-  'Symbols Nerd Font Mono',        -- Nerd Font symbols
-  -- WezTerm's built-in fallback fonts automatically used for missing glyphs
+  'Terminus',
+  'Terminus (TTF)',
 })
-config.font_size = 12.5
+config.font_size = 10
 
--- Font rendering (better for macOS)
-config.freetype_load_target = "Normal"
-config.freetype_render_target = "HorizontalLcd"
+-- Font rendering - disable anti-aliasing for crisp bitmap aesthetic
+config.freetype_load_target = "Mono"
+config.freetype_render_target = "Mono"
 
 -- Disable ligatures if they're causing issues
 -- config.harfbuzz_features = { 'calt=0', 'clig=0', 'liga=0' }
@@ -102,15 +95,12 @@ config.hide_tab_bar_if_only_one_tab = true
 -- Use fancy tab bar (native macOS style)
 config.use_fancy_tab_bar = true
 
--- Tab bar colors with font fallback
+-- Tab bar colors
 config.window_frame = {
   font = wezterm.font_with_fallback({
-    { family = 'CaskaydiaCove Nerd Font Mono', weight = 'Bold' },
-    { family = 'CaskaydiaCove Nerd Font', weight = 'Bold' },
-    { family = 'Cascadia Mono', weight = 'Bold' },
-    { family = 'Menlo', weight = 'Bold' },
+    { family = 'Terminus', weight = 'Bold' },
   }),
-  font_size = 11.0,
+  font_size = 10.0,
   active_titlebar_bg = '#000000',
   inactive_titlebar_bg = '#000000',
 }

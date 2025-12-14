@@ -40,7 +40,7 @@ if [ -z "$windows" ]; then
 fi
 
 # Show dmenu (hide the window ID column)
-selected=$(echo "$windows" | cut -f1 | dmenu -i -l 15 -p "Window:" -fn "CaskaydiaCove Nerd Font Mono-10")
+selected=$(echo "$windows" | cut -f1 | dmenu -i -l 15 -p "Window:" -fn "Terminus-10")
 
 [ -z "$selected" ] && exit 0
 

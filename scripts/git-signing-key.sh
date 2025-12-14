@@ -31,7 +31,7 @@ key_list="[Disable signing]"$'\n'"$key_list"
 # Check if we have X display and dmenu available
 if [ -n "$DISPLAY" ] && command -v dmenu &> /dev/null; then
     # Use dmenu
-    selected=$(echo "$key_list" | dmenu -i -l 10 -p "GPG Key:" -fn "CaskaydiaCove Nerd Font Mono-10")
+    selected=$(echo "$key_list" | dmenu -i -l 10 -p "GPG Key:" -fn "Terminus-10")
 else
     # TTY/SSH fallback - use numbered menu
     echo "Select GPG signing key:"
@@ -79,7 +79,16 @@ else
     # Extract key ID (before the |)
     keyid=$(echo "$selected" | cut -d'|' -f1 | xargs)
 
+    # Extract email from the uid (format: "Name <email@example.com>")
+    email=$(echo "$selected" | grep -oP '<\K[^>]+')
+
     git config --global user.signingkey "$keyid"
     git config --global commit.gpgsign true
-    notify "Signing with: $keyid"
+
+    if [ -n "$email" ]; then
+        git config --global user.email "$email"
+        notify "Signing with: $keyid\nEmail set to: $email"
+    else
+        notify "Signing with: $keyid"
+    fi
 fi

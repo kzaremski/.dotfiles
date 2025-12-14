@@ -39,7 +39,7 @@ while IFS= read -r script; do
 done < <(find "$SCRIPTS_DIR" -maxdepth 1 -type f -executable | sort)
 
 # Show dmenu and get selection
-selected=$(echo -n "$script_list" | dmenu -i -l 20 -p "Scripts:" -fn "CaskaydiaCove Nerd Font Mono-10")
+selected=$(echo -n "$script_list" | dmenu -i -l 20 -p "Scripts:" -fn "Terminus-10")
 
 # Exit if nothing selected
 [ -z "$selected" ] && exit 0

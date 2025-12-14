@@ -137,8 +137,8 @@ nnoremap <F1> :Manual<CR>
 " #####################
 " ## PLUGIN CONFIG   ##
 " #####################
-" Airline: Use powerline fonts (Nerd Font includes these glyphs)
-let g:airline_powerline_fonts = 1
+" Airline: Disable powerline fonts (Terminus doesn't have these glyphs)
+let g:airline_powerline_fonts = 0
 
 " ALE: Disable completion and LSP features (we're not using LSP/asyncomplete)
 let g:ale_completion_enabled = 0
