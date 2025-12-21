@@ -29,6 +29,11 @@ exec --no-startup-id feh --bg-fill ~/.wallpaper
 # This is useful for reconfiguring programs that depend on XresourceS
 exec xrdb $HOME/.Xresources
 
+### Clipboard sync (unifies PRIMARY and CLIPBOARD buffers)
+# Makes middle-click paste, Ctrl+Shift+V, and desktop clipboard all share the same content
+exec --no-startup-id autocutsel -fork
+exec --no-startup-id autocutsel -selection PRIMARY -fork
+
 ### Qt5 theming via qt5ct
 exec --no-startup-id dbus-update-activation-environment --all
 

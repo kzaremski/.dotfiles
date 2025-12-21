@@ -100,10 +100,10 @@ source $ZSH/oh-my-zsh.sh
 # alias zshconfig="mate ~/.zshrc"
 # alias ohmyzsh="mate ~/.oh-my-zsh"
 
-# Clear screen on urxvt launch (Linux only - disabled on macOS)
-# if [[ `ps ho command $(ps ho ppid $$)` == 'urxvt' ]]; then
-#   clear
-# fi
+# Clear screen on urxvt launch so prompt starts at top-left
+if [[ "$TERM" == "rxvt-256color" ]]; then
+  clear
+fi
 
 # Local binaries
 if [ -d "$HOME/.local/bin" ]; then

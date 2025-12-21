@@ -9,6 +9,11 @@ alias ls='ls --color=auto'
 alias grep='grep --color=auto'
 PS1='[\u@\h \W]\$ '
 
+# Clear screen on urxvt launch so prompt starts at top-left
+if [[ "$TERM" == "rxvt-256color" ]]; then
+  clear
+fi
+
 export PATH="/home/kzaremski/.npm-global/bin:/home/kzaremski/.cargo/bin:/home/kzaremski/.local/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/opt/cxoffice/bin:/usr/lib/jvm/default/bin:/usr/bin/site_perl:/usr/bin/vendor_perl:/usr/bin/core_perl"
 export GPG_TTY=$(tty)
 

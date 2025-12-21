@@ -24,6 +24,7 @@ URxvt.matcher.rend.0:  Uline fg7
 ! Keybindings - Ctrl+Shift+C/V for copy/paste
 URxvt.keysym.Shift-Control-V: eval:paste_clipboard
 URxvt.keysym.Shift-Control-C: eval:selection_to_clipboard
+URxvt.keysym.Button2: eval:paste_clipboard
 URxvt.iso14755:    false
 URxvt.iso14755_52: false
 
