@@ -37,27 +37,40 @@ else
     echo "Select GPG signing key:"
     echo ""
 
-    # Convert to array
-    mapfile -t keys <<< "$key_list"
-
-    # Display numbered options
-    for i in "${!keys[@]}"; do
-        echo "  $((i+1))) ${keys[$i]}"
+    # Display numbered options and count them
+    num_keys=0
+    echo "$key_list" | while IFS= read -r line; do
+        num_keys=$((num_keys + 1))
+        echo "  $num_keys) $line"
     done
 
+    # Count total keys
+    num_keys=$(echo "$key_list" | wc -l | tr -d ' ')
+
     echo ""
-    read -p "Enter number (or q to quit): " choice
+    printf "Enter number (or q to quit): "
+    read choice
 
     # Handle quit
-    [[ "$choice" == "q" || "$choice" == "Q" ]] && exit 0
+    case "$choice" in
+        q|Q) exit 0 ;;
+    esac
 
-    # Validate input
-    if ! [[ "$choice" =~ ^[0-9]+$ ]] || [ "$choice" -lt 1 ] || [ "$choice" -gt "${#keys[@]}" ]; then
+    # Validate input is a number
+    case "$choice" in
+        ''|*[!0-9]*)
+            echo "Invalid selection"
+            exit 1
+            ;;
+    esac
+
+    if [ "$choice" -lt 1 ] || [ "$choice" -gt "$num_keys" ]; then
         echo "Invalid selection"
         exit 1
     fi
 
-    selected="${keys[$((choice-1))]}"
+    # Get the selected line
+    selected=$(echo "$key_list" | sed -n "${choice}p")
 fi
 
 # Exit if nothing selected
@@ -68,7 +81,7 @@ notify() {
     if [ -n "$DISPLAY" ] && command -v notify-send &> /dev/null; then
         notify-send "Git Signing Key" "$1"
     fi
-    echo "$1"
+    printf '%b\n' "$1"
 }
 
 if [ "$selected" = "[Disable signing]" ]; then
@@ -80,7 +93,7 @@ else
     keyid=$(echo "$selected" | cut -d'|' -f1 | xargs)
 
     # Extract email from the uid (format: "Name <email@example.com>")
-    email=$(echo "$selected" | grep -oP '<\K[^>]+')
+    email=$(echo "$selected" | sed -n 's/.*<\([^>]*\)>.*/\1/p')
 
     git config --global user.signingkey "$keyid"
     git config --global commit.gpgsign true

@@ -7,32 +7,49 @@
 // custom settings, run the `open default settings` command
 // from the command palette or from `Zed` application menu.
 {
-  "agent_servers": {
-    "your_agent": {
-      "command": "path_to_executable",
+  "ssh_connections": [
+    {
+      "host": "r620devbox.taile18bc5.ts.net",
+      "username": "kzaremski",
       "args": [],
-      "env": {}
+      "projects": [
+        {
+          "paths": [
+            "/home/kzaremski/Repositories"
+          ]
+        },
+        {
+          "paths": [
+            "/home/kzaremski/Repositories/ZRS/Thaumaturge/./"
+          ]
+        },
+        {
+          "paths": [
+            "/home/kzaremski/Repositories/ZRS/infrastructure"
+          ]
+        }
+      ]
     }
-  },
+  ],
   "agent": {
     "default_profile": "ask",
     "default_model": {
-      "provider": "claude",
-      "model": "default"
+      "provider": "ollama",
+      "model": "phi3:3.8b",
     },
-    "model_parameters": []
+    "model_parameters": [],
   },
   "features": {
-    "edit_prediction_provider": "none"
+    "edit_prediction_provider": "none",
   },
   "base_keymap": "VSCode",
   "vim_mode": false,
   "ui_font_size": 16,
-  "buffer_font_size": 13.0,
-  "buffer_font_family": "Terminus",
+  "buffer_font_size": 12.0,
+  "buffer_font_family": "Cascadia Code",
   "theme": {
     "mode": "system",
     "light": "Ayu Dark",
-    "dark": "Ayu Dark"
-  }
+    "dark": "Ayu Dark",
+  },
 }

@@ -1,0 +1,24 @@
+#!/bin/sh
+# pinentry-auto - Cross-platform pinentry wrapper
+# launcher-ignore
+# Automatically finds and executes the correct pinentry-curses for the current OS
+
+# macOS - Homebrew (Apple Silicon)
+if [ -x "/opt/homebrew/bin/pinentry-curses" ]; then
+    exec /opt/homebrew/bin/pinentry-curses "$@"
+# macOS - Homebrew (Intel)
+elif [ -x "/usr/local/bin/pinentry-curses" ]; then
+    exec /usr/local/bin/pinentry-curses "$@"
+# Linux - standard location
+elif [ -x "/usr/bin/pinentry-curses" ]; then
+    exec /usr/bin/pinentry-curses "$@"
+# Fallback - try to find any pinentry-curses in PATH
+elif command -v pinentry-curses >/dev/null 2>&1; then
+    exec pinentry-curses "$@"
+# Last resort - use whatever pinentry is available
+elif command -v pinentry >/dev/null 2>&1; then
+    exec pinentry "$@"
+else
+    echo "ERR No pinentry found" >&2
+    exit 1
+fi

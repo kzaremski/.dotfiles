@@ -137,21 +137,8 @@ nnoremap <F1> :Manual<CR>
 " #####################
 " ## PLUGIN CONFIG   ##
 " #####################
-" Airline: Disable powerline/nerdfonts - use plain ASCII
-let g:airline_powerline_fonts = 0
-let g:airline_left_sep = ''
-let g:airline_right_sep = ''
-let g:airline_left_alt_sep = '|'
-let g:airline_right_alt_sep = '|'
-if !exists('g:airline_symbols')
-  let g:airline_symbols = {}
-endif
-let g:airline_symbols.branch = ''
-let g:airline_symbols.readonly = '[RO]'
-let g:airline_symbols.linenr = ' ln:'
-let g:airline_symbols.maxlinenr = ''
-let g:airline_symbols.colnr = ' col:'
-let g:airline_symbols.dirty = '*'
+" Airline: Enable powerline fonts
+let g:airline_powerline_fonts = 1
 
 " ALE: Disable completion and LSP features (we're not using LSP/asyncomplete)
 let g:ale_completion_enabled = 0

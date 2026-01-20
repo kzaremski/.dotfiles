@@ -39,6 +39,11 @@ brew install htop btop
 brew install ripgrep fd bat exa fzf
 brew install tree
 
+# GPG and pinentry for commit signing
+echo ""
+echo "==> Installing GPG and pinentry..."
+brew install gnupg pinentry
+
 # Modern Unix tools
 echo ""
 echo "==> Installing modern Unix replacements..."
@@ -152,8 +157,12 @@ echo ""
 echo "3. Install Vim plugins:"
 echo "   vim +PlugInstall +qall"
 echo ""
+echo "4. Restart gpg-agent (after linking dotfiles):"
+echo "   gpgconf --kill gpg-agent"
+echo ""
 echo "Optional next steps:"
 echo "- Set WezTerm as your default terminal (System Settings → Default Terminal)"
 echo "- Set WezTerm as default for text files: ./scripts/set-vim-default.sh"
 echo "- Install Alfred for better app launcher (already installed)"
 echo "- Install Karabiner-Elements for advanced keyboard customization"
+echo "- Set up GPG signing key: ~/.dotfiles/scripts/git-signing-key.sh"
