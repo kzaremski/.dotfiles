@@ -1,10 +1,25 @@
+<p align="center">
+  <img src="banner.png" alt="Omarchski" width="100%">
+</p>
+
 # Dotfiles
 
-Personal Linux configuration files for my i3wm-based desktop environment.
+Personal configuration files for a keyboard-driven Linux desktop.
 
 ## Overview
 
-This repository contains my dotfiles and configuration for a keyboard-driven Linux setup centered around i3 window manager. Originally configured for a ThinkPad running Arch Linux.
+This repository contains my dotfiles for a keyboard-driven setup, built up over
+two eras:
+
+- **i3wm on Arch + X11** — the original ThinkPad setup, and still what most of
+  the configs in this repo describe.
+- **Hyprland on Omarchy + Wayland** — where I'm moving day-to-day.
+
+Most of the cross-platform pieces (shell, Vim, tmux, Helix, ranger, git, GPG)
+carry over unchanged. The X11-specific parts — i3, i3status, picom, dunst,
+`.Xresources`, `screenlayout` — are kept for the machines still running them.
+
+macOS is also covered via Aerospace, an i3-style tiling WM.
 
 ## Components
 
@@ -174,6 +189,43 @@ sudo pacman -S firefox pcmanfm htop vim
 sudo pacman -S ttf-cascadia-code-nerd
 ```
 
+**Omarchy / Wayland extras (current setup):**
+
+```bash
+# Qt5 apps need this or they silently fall back to XWayland and render at 1x
+sudo pacman -S qt5-wayland
+
+# OpenCL - required by DaVinci Resolve, also used by Affinity under Wine
+sudo pacman -S rocm-opencl-runtime
+
+# Graphics
+sudo pacman -S inkscape gimp krita
+
+# ASCII banners in Omarchy's logo font (see .local/bin/omarchy-ascii)
+sudo pacman -S figlet          # plus figlet-fonts from the AUR
+```
+
+**Reading Mac disks (APFS):**
+
+```bash
+# AUR - github.com/sgan81/apfs-fuse
+git clone https://aur.archlinux.org/apfs-fuse-git.git
+cd apfs-fuse-git && makepkg -si
+```
+
+Provides `apfs-fuse`, `apfs-dump`, `apfs-dump-quick` and `apfsutil`. Mount
+read-only with:
+
+```bash
+apfs-fuse /dev/sdXN /mnt/point      # -v N to pick a volume on a container
+fusermount3 -u /mnt/point           # unmount
+```
+
+Two caveats worth knowing: it is **read-only**, and it cannot open
+FileVault-encrypted volumes without the password (`-o passwd=...`). For write
+support there is `linux-apfs-rw-dkms` in `extra`, but it is explicitly
+experimental - don't point it at a disk you care about.
+
 ### Setup
 
 #### 1. Clone this repository
@@ -334,11 +386,45 @@ The `dotfiles.py` script provides an interactive TUI for managing your dotfiles:
 - Rich library support for enhanced TUI (optional)
 - Graceful fallback to basic mode without dependencies
 
+- Label filtering, so one repo serves several machines
+- `--dry-run` preview and `--unlink` to reverse
+- `--yes` for scripted, non-interactive provisioning
+
 **Usage:**
 ```bash
-python3 dotfiles.py              # Interactive mode
-python3 dotfiles.py --install-deps  # Create .venv and install dependencies
-python3 dotfiles.py --help          # Show help
+python3 dotfiles.py                       # Interactive mode
+python3 dotfiles.py --labels              # List labels and entry counts
+python3 dotfiles.py --link --label omarchy   # Only this machine's config
+python3 dotfiles.py --link --label macos -y  # Non-interactive
+python3 dotfiles.py --link --exclude-label legacy
+python3 dotfiles.py --link --dry-run      # Preview, change nothing
+python3 dotfiles.py --unlink              # Remove symlinks into this repo
+python3 dotfiles.py --install-deps        # Create .venv, install deps
+python3 dotfiles.py --help
+```
+
+**Labels:**
+
+Every manifest entry carries labels so a single repo can serve the Omarchy
+laptop, the old X11 ThinkPad, and macOS without linking configs for software
+that isn't installed.
+
+| Label | Meaning |
+| --- | --- |
+| `omarchy` `wayland` `current` | The Hyprland/Wayland setup in use today |
+| `x11` `x230` `legacy` | The old i3-on-ThinkPad stack |
+| `macos` | Works on macOS (Aerospace, Rectangle, cross-platform tools) |
+| `common` | Platform-agnostic |
+| `wm` `shell` `terminal` `editor` `tools` `fonts` `dev` `apps` | Category |
+
+`--label` takes a union - `--label x11,x230` matches entries with *either*.
+`--exclude-label` is applied afterwards, so exclusions always win. An entry
+with no labels never matches a `--label` filter.
+
+Provisioning a new Omarchy machine:
+```bash
+python3 dotfiles.py --link --label omarchy,common --dry-run   # check first
+python3 dotfiles.py --link --label omarchy,common -y
 ```
 
 **Dependency Management:**
@@ -366,17 +452,26 @@ dotfiles:
   - source: .config/i3        # Can be files or directories
     dest: .config/i3
     description: i3 window manager config
+    labels: [wm, x11, x230, legacy]
 ```
 
 **Adding a new dotfile:**
 1. Edit `manifest.yaml`
-2. Add a new entry with `source`, `dest`, and `description`
-3. Run `python3 dotfiles.py` to link it
+2. Add an entry with `source`, `dest`, `description`, and `labels`
+3. Run `python3 dotfiles.py --link --label <one of them> --dry-run` to check
+4. Drop `--dry-run` to apply
 
 **Format:**
 - `source`: Path relative to the dotfiles repository
 - `dest`: Path relative to your home directory
 - `description`: Human-readable description shown in the TUI
+- `labels`: List of tags used by `--label` / `--exclude-label` (optional,
+  but an unlabelled entry can only be linked by an unfiltered run)
+
+Prefer file-level entries over directory-level ones where a directory also
+holds things that shouldn't be tracked - `~/.local/bin` holds installed
+tooling, `~/.local/share/applications` is full of generated launchers, and
+`~/.claude` holds history and session data.
 
 No need to modify the Python script - just update the manifest!
 
@@ -388,4 +483,8 @@ MIT License - See [LICENSE](LICENSE) file for details.
 
 - Originally configured on Arch Linux (July 2024)
 - Optimized for ThinkPad hardware but adaptable to other systems
+- Migrating to Omarchy (Arch + Hyprland + Wayland); X11 configs retained for
+  existing machines
+- Banner is the Tokyo Night `oma-cityscape` wallpaper with the title set in
+  Delta Corps Priest 1, the figlet font Omarchy's own logo uses
 - **macOS users:** See [docs/MACOS_CONFIG.md](docs/MACOS_CONFIG.md) for macOS-specific setup and configuration
