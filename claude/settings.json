@@ -1,0 +1,9 @@
+{
+  "attribution": {
+    "commit": "",
+    "pr": ""
+  },
+  "tui": "fullscreen",
+  "theme": "dark",
+  "agentPushNotifEnabled": true
+}
