@@ -13,128 +13,262 @@ dotfiles:
   - source: claude/commands
     dest: .claude/commands
     description: Claude Code custom slash commands
+    labels: [dev, common, macos]
+
+  # File-level, never the whole ~/.claude directory: that also holds
+  # history.jsonl, sessions/, projects/ (per-project memory) and
+  # shell-snapshots/, none of which belong in a public repo.
+  - source: claude/settings.json
+    dest: .claude/settings.json
+    description: Claude Code settings (theme, TUI, commit attribution)
+    labels: [dev, common, macos]
+
+  # Shell prompt (junkfood port, see the comments in the file)
+  - source: .config/starship.toml
+    dest: .config/starship.toml
+    description: Starship prompt configuration
+    labels: [shell, omarchy, current, macos]
+
+  # ---- Omarchy (Hyprland / Wayland) ----------------------------------------
+  # Hyprland user config. Loaded after Omarchy's packaged defaults, so these
+  # files hold overrides only. monitors.lua carries this machine's panel EDID
+  # gate, the dock monitors' serials, and the workspace pinning.
+  - source: .config/hypr
+    dest: .config/hypr
+    description: Hyprland config (monitors, input, bindings, looknfeel)
+    labels: [wm, omarchy, wayland, current]
+
+  # File-level: ~/.config/omarchy also holds themes/, hooks/ and defaults/
+  # that Omarchy generates and owns.
+  - source: .config/omarchy/shell.json
+    dest: .config/omarchy/shell.json
+    description: Omarchy shell (bar layout, idle/screensaver/lock timings)
+    labels: [wm, omarchy, wayland, current]
+
+  - source: .config/omarchy/extensions/omarchy-menu.jsonc
+    dest: .config/omarchy/extensions/omarchy-menu.jsonc
+    description: Omarchy menu extensions (symbols picker under Trigger)
+    labels: [wm, omarchy, wayland, current]
+
+  - source: .config/omarchy/plugins/kzaremski.workspaces
+    dest: .config/omarchy/plugins/kzaremski.workspaces
+    description: Bar widget - per-monitor workspaces with scroll-to-switch
+    labels: [wm, omarchy, wayland, current]
+
+  # File-level: ~/.local/bin also holds installed tooling (claude, gh, ...)
+  - source: .local/bin/omarchy-ascii
+    dest: .local/bin/omarchy-ascii
+    description: Render text in Omarchy's logo font (Delta Corps Priest 1)
+    labels: [tools, omarchy, current]
+
+  - source: .local/bin/comrade
+    dest: .local/bin/comrade
+    description: Offline assistant - local model + context profiles, no tools
+    labels: [tools, omarchy, current]
+
+  - source: .local/bin/comrade-do
+    dest: .local/bin/comrade-do
+    description: Minimal local agent loop - read/list/search, opt-in shell
+    labels: [tools, omarchy, current]
+
+  - source: .config/comrade
+    dest: .config/comrade
+    description: comrade context profiles (machine, Omarchy Hyprland Lua API)
+    labels: [tools, omarchy, current]
+
+  - source: .local/bin/keepassxc-scaled
+    dest: .local/bin/keepassxc-scaled
+    description: Launch KeePassXC on XWayland at the focused monitor's scale
+    labels: [tools, omarchy, wayland, current]
+
+  - source: .local/share/figlet/fonts/Delta Corps Priest 1.flf
+    dest: .local/share/figlet/fonts/Delta Corps Priest 1.flf
+    description: Figlet font used by omarchy-ascii
+    labels: [fonts, omarchy, current]
+
+  - source: .local/bin/omarchy-drive-mount
+    dest: .local/bin/omarchy-drive-mount
+    description: Menu-driven disk mounting (udisksctl, apfs-fuse for APFS)
+    labels: [tools, omarchy, current]
+
+  - source: .local/bin/omarchy-drive-unmount
+    dest: .local/bin/omarchy-drive-unmount
+    description: Menu-driven disk unmounting (fusermount3 / udisksctl)
+    labels: [tools, omarchy, current]
+
+  # File-level: ~/.local/share/applications is full of generated entries
+  # (Steam, CrossOver associations, web apps).
+  - source: .local/share/applications/org.keepassxc.KeePassXC.desktop
+    dest: .local/share/applications/org.keepassxc.KeePassXC.desktop
+    description: KeePassXC launcher pinned to XWayland with runtime scaling
+    labels: [apps, omarchy, current]
+
+  - source: .local/share/applications/DaVinciResolve.desktop
+    dest: .local/share/applications/DaVinciResolve.desktop
+    description: DaVinci Resolve launcher (scaling via its own DisplayScale)
+    labels: [apps, omarchy, current]
+
+  # ---- macOS ---------------------------------------------------------------
+  - source: .aerospace.toml
+    dest: .aerospace.toml
+    description: Aerospace tiling window manager (i3-style, macOS)
+    labels: [wm, macos]
+
+  - source: com.knollsoft.Rectangle.plist
+    dest: Library/Preferences/com.knollsoft.Rectangle.plist
+    description: Rectangle window snapping preferences (macOS)
+    labels: [wm, macos]
 
   # Git configuration
   - source: .gitignore_global
     dest: .gitignore_global
     description: Global gitignore (ignores .claude, OS files, etc.)
+    labels: [dev, common, macos]
 
   # GPG configuration
   - source: .gnupg/gpg-agent.conf
     dest: .gnupg/gpg-agent.conf
     description: GPG agent config (TTY-based password prompts)
+    labels: [dev, common, macos]
 
   # Shell configurations
   - source: .bashrc
     dest: .bashrc
     description: Bash configuration
+    labels: [shell, omarchy, current]
 
   - source: .zshrc
     dest: .zshrc
     description: Zsh configuration
+    labels: [shell, legacy, x11, x230, macos]
 
   - source: .profile
     dest: .profile
     description: Shell profile
+    labels: [shell, common, macos]
 
   # Editor configurations
   - source: .vimrc
     dest: .vimrc
     description: Vim configuration
+    labels: [editor, common, macos]
 
   - source: .config/zed
     dest: .config/zed
     description: Zed editor configuration
+    labels: [editor, common, macos]
 
   # X11 configurations
   - source: .Xresources
     dest: .Xresources
     description: X resources (URxvt, colors, fonts)
+    labels: [x11, x230, legacy]
 
   # GTK/Qt font rendering
   - source: .config/gtk-3.0/settings.ini
     dest: .config/gtk-3.0/settings.ini
     description: GTK3 settings (Terminus font)
+    labels: [fonts, x11, x230, legacy]
 
   - source: .gtkrc-2.0
     dest: .gtkrc-2.0
     description: GTK2 settings (Terminus font)
+    labels: [fonts, x11, x230, legacy]
 
   - source: .config/qt5ct/qt5ct.conf
     dest: .config/qt5ct/qt5ct.conf
     description: Qt5 settings (Terminus font)
+    labels: [fonts, x11, x230, legacy]
 
   - source: .config/fontconfig
     dest: .config/fontconfig
     description: Fontconfig (disable AA for Terminus only)
+    labels: [fonts, x11, x230, legacy]
 
   # Terminal configurations
   - source: .wezterm.lua
     dest: .wezterm.lua
     description: WezTerm terminal config
+    labels: [terminal, common, macos]
 
   - source: .tmux.conf
     dest: .tmux.conf
     description: tmux terminal multiplexer config
+    labels: [terminal, common, macos]
 
   - source: .tmux
     dest: .tmux
     description: tmux layout configurations and scripts
+    labels: [terminal, common, macos]
 
   # LaTeX configuration
   - source: .latexmkrc
     dest: .latexmkrc
     description: latexmk configuration for LaTeX compilation
+    labels: [tools, common, macos]
 
   # Application configs (directories)
   - source: .config/i3
     dest: .config/i3
     description: i3 window manager config
+    labels: [wm, x11, x230, legacy]
 
   - source: .config/i3status
     dest: .config/i3status
     description: i3status bar config
+    labels: [wm, x11, x230, legacy]
 
   - source: .config/py3status
     dest: .config/py3status
     description: py3status bar config and custom modules
+    labels: [wm, x11, x230, legacy]
 
   - source: .config/picom
     dest: .config/picom
     description: Picom compositor config
+    labels: [wm, x11, x230, legacy]
 
   - source: .config/dunst
     dest: .config/dunst
     description: Dunst notification config
+    labels: [wm, x11, x230, legacy]
 
   - source: .config/alacritty
     dest: .config/alacritty
     description: Alacritty terminal config
+    labels: [terminal, omarchy, current]
 
   - source: .config/kitty
     dest: .config/kitty
     description: Kitty terminal config
+    labels: [terminal, omarchy, current]
 
   - source: .config/helix
     dest: .config/helix
     description: Helix editor config
+    labels: [editor, common, macos]
 
   - source: .config/htop
     dest: .config/htop
     description: htop system monitor config
+    labels: [tools, common, macos]
 
   - source: .config/bpytop
     dest: .config/bpytop
     description: bpytop system monitor config
+    labels: [tools, common]
 
   - source: .config/pcmanfm
     dest: .config/pcmanfm
     description: PCManFM file manager config
+    labels: [tools, x11, legacy]
 
   - source: .config/conky
     dest: .config/conky
     description: Conky system monitor config
+    labels: [tools, x11, x230, legacy]
 
   - source: .config/ranger
     dest: .config/ranger
     description: Ranger terminal file manager config
+    labels: [tools, common, macos]

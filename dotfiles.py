@@ -57,6 +57,22 @@ try:
 except ImportError:
     HAS_YAML = False
 
+# ASCII banner, rendered in Delta Corps Priest 1 -- the figlet font
+# Omarchy's own logo uses. Shown only when the terminal is wide enough;
+# narrower terminals fall back to the plain header.
+BANNER = """\
+ ▄██████▄    ▄▄▄▄███▄▄▄▄      ▄████████    ▄████████  ▄████████    ▄█    █▄       ▄████████    ▄█   ▄█▄  ▄█
+███    ███ ▄██▀▀▀███▀▀▀██▄   ███    ███   ███    ███ ███    ███   ███    ███     ███    ███   ███ ▄███▀ ███
+███    ███ ███   ███   ███   ███    ███   ███    ███ ███    █▀    ███    ███     ███    █▀    ███▐██▀   ███▌
+███    ███ ███   ███   ███   ███    ███  ▄███▄▄▄▄██▀ ███         ▄███▄▄▄▄███▄▄   ███         ▄█████▀    ███▌
+███    ███ ███   ███   ███ ▀███████████ ▀▀███▀▀▀▀▀   ███        ▀▀███▀▀▀▀███▀  ▀███████████ ▀▀█████▄    ███▌
+███    ███ ███   ███   ███   ███    ███ ▀███████████ ███    █▄    ███    ███            ███   ███▐██▄   ███
+███    ███ ███   ███   ███   ███    ███   ███    ███ ███    ███   ███    ███      ▄█    ███   ███ ▀███▄ ███
+ ▀██████▀   ▀█   ███   █▀    ███    █▀    ███    ███ ████████▀    ███    █▀     ▄████████▀    ███   ▀█▀ █▀
+                                          ███    ███                                          ▀
+"""
+BANNER_WIDTH = 108
+
 # Manifest file path
 MANIFEST_FILE = SCRIPT_DIR / "manifest.yaml"
 
@@ -81,13 +97,16 @@ def load_dotfiles_manifest():
             print("Expected 'dotfiles' key with a list of entries.")
             sys.exit(1)
 
-        # Convert to tuple format (source, dest, description)
+        # Convert to tuple format (source, dest, description, labels)
         dotfiles = []
         for entry in data['dotfiles']:
             if not all(k in entry for k in ['source', 'dest', 'description']):
                 print(f"Warning: Skipping invalid entry: {entry}")
                 continue
-            dotfiles.append((entry['source'], entry['dest'], entry['description']))
+            labels = entry.get('labels') or []
+            if isinstance(labels, str):
+                labels = [l.strip() for l in labels.split(',') if l.strip()]
+            dotfiles.append((entry['source'], entry['dest'], entry['description'], list(labels)))
 
         if not dotfiles:
             print(f"Error: No valid dotfiles found in {MANIFEST_FILE}")
@@ -117,10 +136,18 @@ class DotfilesManager:
         self.repo_path = Path(__file__).parent.resolve()
         self.home_path = Path.home()
         self.backup_dir = self.home_path / ".dotfiles-backup"
+        # When True, report what would happen but touch nothing on disk.
+        self.dry_run = False
 
     def print_header(self):
         """Print a fancy header or simple text depending on Rich availability"""
+        # Only draw the banner if it fits; wrapping mangles block art badly.
+        cols = shutil.get_terminal_size(fallback=(80, 24)).columns
+        show_banner = cols >= BANNER_WIDTH
+
         if HAS_RICH:
+            if show_banner:
+                console.print(Text(BANNER, style="bold cyan"), highlight=False)
             console.print(Panel.fit(
                 "[bold cyan]Konstantin's Dotfiles Manager[/bold cyan]\n"
                 "[dim]Interactive symlink management for configuration files[/dim]",
@@ -128,6 +155,8 @@ class DotfilesManager:
                 border_style="cyan"
             ))
         else:
+            if show_banner:
+                print(BANNER)
             print("=" * 60)
             print("  DOTFILES MANAGER")
             print("  Interactive symlink management")
@@ -206,7 +235,7 @@ class DotfilesManager:
         """List all dotfiles with their current status"""
         data = []
         dotfiles = get_dotfiles()
-        for source_rel, dest_rel, desc in dotfiles:
+        for source_rel, dest_rel, desc, _labels in dotfiles:
             status = self.get_status(source_rel, dest_rel)
             data.append((source_rel, dest_rel, status, desc))
 
@@ -249,20 +278,68 @@ class DotfilesManager:
         else:
             return input(f"{message} [{default}]: ").strip() or default
 
+    def all_labels(self):
+        """Every label in the manifest, with how many entries carry each."""
+        counts = {}
+        for entry in get_dotfiles():
+            for label in entry[3]:
+                counts[label] = counts.get(label, 0) + 1
+        return counts
+
+    def select(self, include=None, exclude=None):
+        """Filter manifest entries by label.
+
+        include: keep an entry if it carries ANY of these (union, not
+                 intersection -- `--label omarchy,shell` means "either").
+                 An entry with no labels never matches an include filter.
+        exclude: drop an entry if it carries ANY of these. Applied after
+                 include, so exclude always wins.
+        """
+        entries = get_dotfiles()
+        if include:
+            entries = [e for e in entries if set(e[3]) & set(include)]
+        if exclude:
+            entries = [e for e in entries if not (set(e[3]) & set(exclude))]
+        return entries
+
+    def backup_name_for(self, path):
+        """Build a collision-free backup filename for a destination path.
+
+        Using only path.name would collide for entries that share a basename
+        (e.g. .config/foo/config and .config/bar/config), since the timestamp
+        is only second-resolution. Flatten the home-relative path instead.
+        """
+        try:
+            rel = path.relative_to(self.home_path)
+        except ValueError:
+            rel = Path(path.name)
+        flat = str(rel).strip("/").replace("/", "_")
+        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+        return f"{flat}.backup.{timestamp}"
+
     def backup_file(self, path):
-        """Backup an existing file or directory"""
-        if not path.exists():
+        """Backup an existing file, directory, or symlink.
+
+        Symlinks are preserved as symlinks rather than dereferenced -- copying
+        through a link would duplicate the target's contents (potentially a
+        large tree) and lose the fact that it was a link at all. Broken
+        symlinks are handled too: they fail exists() but still need removing.
+        """
+        if not path.exists() and not path.is_symlink():
             return None
 
+        backup_path = self.backup_dir / self.backup_name_for(path)
+
+        if self.dry_run:
+            return backup_path
+
         # Create backup directory if it doesn't exist
-        self.backup_dir.mkdir(exist_ok=True)
+        self.backup_dir.mkdir(parents=True, exist_ok=True)
 
-        # Create timestamped backup
-        timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-        backup_name = f"{path.name}.backup.{timestamp}"
-        backup_path = self.backup_dir / backup_name
-
-        if path.is_dir():
+        if path.is_symlink():
+            # Record the link itself, target unresolved.
+            backup_path.symlink_to(os.readlink(path))
+        elif path.is_dir():
             shutil.copytree(path, backup_path, symlinks=True)
         else:
             shutil.copy2(path, backup_path)
@@ -291,7 +368,7 @@ class DotfilesManager:
 
         # Check if destination already exists
         if dest.exists() or dest.is_symlink():
-            if dest.is_symlink() and dest.resolve() == source:
+            if dest.is_symlink() and dest.resolve() == source.resolve():
                 self.print_info(f"→ Already linked: {dest_rel}", "info")
                 return (True, yes_to_all)
 
@@ -307,13 +384,19 @@ class DotfilesManager:
             # Backup existing file
             backup_path = self.backup_file(dest)
             if backup_path:
-                self.print_info(f"  Backed up to: {backup_path.relative_to(self.home_path)}", "info")
+                verb = "Would back up" if self.dry_run else "Backed up"
+                self.print_info(f"  {verb} to: {backup_path.relative_to(self.home_path)}", "info")
 
             # Remove existing file/symlink
-            if dest.is_dir() and not dest.is_symlink():
-                shutil.rmtree(dest)
-            else:
-                dest.unlink()
+            if not self.dry_run:
+                if dest.is_dir() and not dest.is_symlink():
+                    shutil.rmtree(dest)
+                else:
+                    dest.unlink()
+
+        if self.dry_run:
+            self.print_info(f"● Would link: {dest_rel} → {source_rel}", "info")
+            return (True, yes_to_all)
 
         # Create parent directories if needed
         dest.parent.mkdir(parents=True, exist_ok=True)
@@ -359,7 +442,7 @@ class DotfilesManager:
         success_count = 0
         yes_to_all = False
 
-        for source_rel, dest_rel, desc in dotfiles:
+        for source_rel, dest_rel, desc, _labels in dotfiles:
             success, yes_to_all = self.create_symlink(source_rel, dest_rel, yes_to_all=yes_to_all)
             if success:
                 success_count += 1
@@ -368,6 +451,87 @@ class DotfilesManager:
         self.print_info(f"\n✓ Successfully linked {success_count}/{len(dotfiles)} dotfiles", "success")
         if self.backup_dir.exists():
             self.print_info(f"  Backups saved to: {self.backup_dir.relative_to(self.home_path)}", "info")
+
+    def link_by_label(self, include=None, exclude=None, force=False):
+        """Link only the entries matching the given label filters."""
+        entries = self.select(include, exclude)
+        if not entries:
+            self.print_info("No entries match those labels.", "warning")
+            return
+
+        what = []
+        if include: what.append("labels: " + ", ".join(include))
+        if exclude: what.append("excluding: " + ", ".join(exclude))
+        self.print_info("Linking %d of %d entries (%s)\n" % (
+            len(entries), len(get_dotfiles()), "; ".join(what) or "all"), "info")
+
+        ok = 0
+        yes_to_all = force
+        for source_rel, dest_rel, _desc, _labels in entries:
+            success, yes_to_all = self.create_symlink(
+                source_rel, dest_rel, force=force, yes_to_all=yes_to_all)
+            if success: ok += 1
+
+        verb = "would link" if self.dry_run else "linked"
+        self.print_info("\n%s %d/%d" % (verb.capitalize(), ok, len(entries)),
+                        "success" if ok == len(entries) else "warning")
+
+    def unlink_all(self, force=False):
+        """Remove symlinks that point into this repo.
+
+        Only removes links whose target resolves inside the repo -- a real file
+        at the destination, or a link pointing somewhere else, is left alone so
+        this can never eat something it didn't create. Backups in
+        ~/.dotfiles-backup are never touched; restoring is a deliberate manual
+        step.
+        """
+        removed = skipped = 0
+        yes_to_all = force
+
+        for source_rel, dest_rel, _desc, _labels in get_dotfiles():
+            dest = self.home_path / dest_rel
+            source = self.repo_path / source_rel
+
+            if not dest.is_symlink():
+                if dest.exists():
+                    self.print_info(f"⊘ Not a symlink, left alone: {dest_rel}", "warning")
+                    skipped += 1
+                continue
+
+            try:
+                points_here = dest.resolve() == source.resolve()
+            except OSError:
+                points_here = False   # broken link
+
+            if not points_here:
+                self.print_info(f"⊘ Points outside the repo, left alone: {dest_rel}", "warning")
+                skipped += 1
+                continue
+
+            if not yes_to_all:
+                response = self.confirm(f"  Remove symlink {dest_rel}?", default=False, allow_all=True)
+                if response == 'all':
+                    yes_to_all = True
+                elif not response:
+                    skipped += 1
+                    continue
+
+            if self.dry_run:
+                self.print_info(f"● Would unlink: {dest_rel}", "info")
+            else:
+                try:
+                    dest.unlink()
+                    self.print_info(f"✓ Unlinked: {dest_rel}", "success")
+                except Exception as e:
+                    self.print_info(f"✗ Failed to unlink {dest_rel}: {e}", "error")
+                    skipped += 1
+                    continue
+            removed += 1
+
+        verb = "would be removed" if self.dry_run else "removed"
+        self.print_info(f"\n{removed} {verb}, {skipped} left alone", "info")
+        if self.backup_dir.exists():
+            self.print_info(f"Backups remain in: {self.backup_dir}", "info")
 
     def interactive_mode(self):
         """Run interactive selection mode"""
@@ -558,6 +722,18 @@ def main(args):
         print()
         print("Options:")
         print("  -l, --link         Interactive mode to create symlinks")
+        print("  -u, --unlink       Remove symlinks that point into this repo")
+        print("  -n, --dry-run      Show what would happen; change nothing")
+        print("  --label A,B        Only entries carrying ANY of these labels")
+        print("  --exclude-label A  Skip entries carrying ANY of these labels")
+        print("  --labels           List all labels and how many entries use each")
+        print("  -y, --yes          Don't prompt; assume yes (for scripted installs)")
+        print()
+        print("Examples:")
+        print("  dotfiles.py --labels")
+        print("  dotfiles.py --link --label omarchy -y")
+        print("  dotfiles.py --link --label common,macos --dry-run")
+        print("  dotfiles.py --link --exclude-label legacy")
         print("  --install-deps     Install Python dependencies (PyYAML and Rich)")
         print("  -h, --help         Show this help message")
         print()
@@ -618,9 +794,46 @@ def main(args):
             print()
 
     manager = DotfilesManager()
+    manager.dry_run = "--dry-run" in args or "-n" in args
+    if manager.dry_run:
+        manager.print_info("DRY RUN - nothing will be changed on disk\n", "warning")
+
+    def opt_values(flag):
+        """Collect comma- or space-separated values following a flag."""
+        vals = []
+        for i, a in enumerate(args):
+            if a == flag and i + 1 < len(args):
+                vals += [v.strip() for v in args[i + 1].split(',') if v.strip()]
+            elif a.startswith(flag + "="):
+                vals += [v.strip() for v in a.split('=', 1)[1].split(',') if v.strip()]
+        return vals
+
+    include = opt_values("--label")
+    exclude = opt_values("--exclude-label")
+    assume_yes = "--yes" in args or "-y" in args
 
     # Parse arguments
-    if "--link" in args or "-l" in args:
+    if "--labels" in args:
+        manager.print_header()
+        counts = manager.all_labels()
+        if not counts:
+            manager.print_info("No labels defined in the manifest.", "warning")
+        else:
+            manager.print_info("Labels in manifest.yaml:\n", "info")
+            for label in sorted(counts, key=lambda k: (-counts[k], k)):
+                print("  %-12s %d" % (label, counts[label]))
+        return
+
+    if "--unlink" in args or "-u" in args:
+        manager.print_header()
+        manager.unlink_all(force=assume_yes)
+    elif include or exclude:
+        manager.print_header()
+        manager.link_by_label(include, exclude, force=assume_yes)
+    elif assume_yes and ("--link" in args or "-l" in args):
+        manager.print_header()
+        manager.link_by_label(None, None, force=True)
+    elif "--link" in args or "-l" in args:
         manager.interactive_mode()
     else:
         # Default to interactive mode

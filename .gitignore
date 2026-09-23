@@ -75,3 +75,15 @@ $RECYCLE.BIN/
 
 # Log files
 *.log
+
+# Runtime data apps write into linked config directories.
+# These dirs are symlinks into this repo, so anything the app generates at
+# runtime lands here. error.log is already covered by *.log above.
+.config/bpytop/themes/
+.config/zed/themes/
+
+# Timestamped backups left beside configs (created when editing them in place).
+# The live dirs are symlinked into this repo, so these would otherwise land here.
+*.bak
+*.bak[0-9]
+*.bak.*
