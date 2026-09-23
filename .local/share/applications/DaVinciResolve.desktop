@@ -1,0 +1,22 @@
+[Desktop Entry]
+Version=1.0
+Type=Application
+Name=DaVinci Resolve
+GenericName=DaVinci Resolve
+Comment=Revolutionary new tools for editing, visual effects, color correction and professional audio post production, all in a single application!
+Path=/opt/resolve/
+# HiDPI on this 2560x1600 / ~340 DPI panel is NOT done with QT_SCALE_FACTOR:
+# Resolve bundles its own Qt and ignores it for UI layout (verified -- the
+# welcome window stayed 900x600 physical with QT_SCALE_FACTOR=2 set). Worse,
+# it COMPOUNDS with Resolve's own setting, so it must stay unset.
+# The real control is <DisplayScale> in
+#   ~/.local/share/DaVinciResolve/configs/config.user.xml
+# currently 200. Change it in-app via Preferences > User > UI Settings, or
+# edit that file while Resolve is CLOSED (it rewrites the file on exit).
+Exec=/opt/resolve/bin/resolve %u
+Terminal=false
+MimeType=application/x-resolveproj;
+Icon=davinci-resolve
+StartupNotify=true
+Name[en_US]=DaVinci Resolve
+StartupWMClass=resolve

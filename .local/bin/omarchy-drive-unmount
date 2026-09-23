@@ -1,0 +1,60 @@
+#!/bin/bash
+# Pick a mounted removable/FUSE filesystem and unmount it.
+#
+# FUSE mounts (apfs-fuse and friends) need fusermount3; a root-owned one
+# needs pkexec too. Everything else goes back through udisksctl.
+#
+# Only offers mounts under /run/media, /mnt and /media, so system mounts
+# (/, /boot, /var/log ...) are never listed.
+set -uo pipefail
+
+mapfile -t ROWS < <(python3 <<'PY'
+import json, subprocess
+out = subprocess.run(["lsblk","-Jpo","NAME,FSTYPE,SIZE,LABEL,MOUNTPOINT,TYPE"],
+                     capture_output=True, text=True).stdout
+def walk(nodes):
+    for n in nodes:
+        yield n
+        yield from walk(n.get("children") or [])
+seen = set()
+for n in walk(json.loads(out)["blockdevices"]):
+    mp = n.get("mountpoint")
+    if not mp: continue
+    if not mp.startswith(("/run/media","/mnt","/media")): continue
+    seen.add(mp)
+    print("\t".join([mp, n["name"], n.get("fstype") or "fuse", n.get("size") or "?"]))
+
+# FUSE mounts don't always carry a block device in lsblk, so read mountinfo too
+for line in open("/proc/self/mountinfo"):
+    f = line.split()
+    sep = f.index("-")
+    mp, fstype, src = f[4], f[sep+1], f[sep+2]
+    if not mp.startswith(("/run/media","/mnt","/media")): continue
+    if mp in seen: continue
+    if fstype in ("autofs","tmpfs"): continue
+    print("\t".join([mp, src, fstype, "?"]))
+PY
+)
+
+if ((${#ROWS[@]} == 0)); then
+  echo "Nothing mounted under /run/media, /mnt or /media."
+  read -rsn1 -p "Press any key..."; exit 0
+fi
+
+CHOICE=$(printf '%s\n' "${ROWS[@]}" \
+  | awk -F'\t' '{printf "%-26s %-14s %-9s %s\n", $1, $2, $3, $4}' \
+  | gum choose --header "Select a filesystem to unmount") || exit 1
+
+MP=$(awk '{print $1}' <<<"$CHOICE")
+DEV=$(awk '{print $2}' <<<"$CHOICE")
+FS=$(awk '{print $3}' <<<"$CHOICE")
+
+if [[ $FS == fuse* || $FS == apfs ]]; then
+  fusermount3 -u "$MP" 2>/dev/null \
+    || pkexec fusermount3 -u "$MP" \
+    || { echo "Unmount failed - something may still have files open:"; lsof +D "$MP" 2>/dev/null | head; }
+else
+  udisksctl unmount -b "$DEV" || echo "Unmount failed"
+fi
+mountpoint -q "$MP" && echo "Still mounted: $MP" || echo "Unmounted $MP"
+read -rsn1 -p "Press any key..."

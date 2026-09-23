@@ -1,0 +1,76 @@
+[Desktop Entry]
+Name=KeePassXC
+GenericName=Password Manager
+GenericName[ar]=مدير كلمات المرور
+GenericName[bg]=Мениджър на пароли
+GenericName[ca]=Gestor de contrasenyes
+GenericName[cs]=Aplikace pro správu hesel
+GenericName[da]=Adgangskodehåndtering
+GenericName[de]=Passwortverwaltung
+GenericName[es]=Gestor de contraseñas
+GenericName[et]=Paroolihaldur
+GenericName[fi]=Salasanamanageri
+GenericName[fr]=Gestionnaire de mot de passe
+GenericName[hu]=Jelszókezelő
+GenericName[id]=Pengelola Sandi
+GenericName[it]=Gestione password
+GenericName[ja]=パスワードマネージャー
+GenericName[ko]=암호 관리자
+GenericName[lt]=Slaptažodžių tvarkytuvė
+GenericName[nb]=Passordhåndterer
+GenericName[nl]=Wachtwoordbeheer
+GenericName[pl]=Menedżer haseł
+GenericName[pt_BR]=Gerenciador de Senhas
+GenericName[pt]=Gestor de palavras-passe
+GenericName[ro]=Manager de parole
+GenericName[ru]=Менеджер паролей
+GenericName[sk]=Správca hesiel
+GenericName[sv]=Lösenordshanterare
+GenericName[th]=แอพจัดการรหัสผ่าน
+GenericName[tr]=Parola yöneticisi
+GenericName[uk]=Розпорядник паролів
+GenericName[zh_CN]=密码管理器
+GenericName[zh_TW]=密碼管理員
+Comment=Community-driven port of the Windows application “KeePass Password Safe”
+Comment[da]=Fællesskabsdrevet port af Windows-programmet “KeePass Password Safe”
+Comment[et]=Kogukonna arendatav port Windowsi programmist KeePass Password Safe
+Comment[ru]=Разработанный сообществом порт Windows-приложения KeePass Password Safe
+# --- LOCAL OVERRIDE -------------------------------------------------------
+# Pinned to XWayland (QT_QPA_PLATFORM=xcb) deliberately.
+#
+# Running KeePassXC as a native Wayland client hits two open Hyprland bugs
+# that make it unusable when tiled:
+#   - hyprwm/Hyprland#9277 - clicks land at the wrong surface position after
+#     a resize, so the window stops responding to clicks
+#   - hyprwm/Hyprland#3167 - Qt clients cannot reset their window size
+# Tiling causes a resize, so both fire immediately. Observed 2026-09-22.
+#
+# XWayland also restores global Auto-Type, which Wayland blocks outright
+# (Auto-Type works by injecting input via XTEST).
+#
+# QT_SCALE_FACTOR=2 is required: Omarchy sets xwayland:force_zero_scaling =
+# true, so XWayland clients render at 1x with no compositor upscaling, which
+# is microscopic on this 2560x1600 / ~340 DPI panel.
+#
+# SECURITY TRADEOFF, accepted knowingly: X11 has no isolation between X
+# clients. Any OTHER XWayland client can keylog globally, screenshot other X
+# windows, and inject input. On this machine that means Steam and DaVinci
+# Resolve (both proprietary) share an X server with the password manager.
+# Wayland-native clients remain isolated from all of this.
+# Note the clipboard is bridged between Wayland and XWayland either way, so
+# KeePassXC's clipboard-clear timeout matters regardless of backend.
+# --------------------------------------------------------------------------
+Exec=/home/kzaremski/.local/bin/keepassxc-scaled %f
+TryExec=keepassxc
+Icon=keepassxc
+StartupWMClass=keepassxc
+StartupNotify=false
+Terminal=false
+Type=Application
+Version=1.5
+Categories=Utility;Security;Qt;
+MimeType=application/x-keepass2;
+SingleMainWindow=true
+X-GNOME-SingleWindow=true
+Keywords=security;privacy;password-manager;yubikey;password;keepass;
+Keywords[de]=sicherheit;privatsphäre;passwort-manager;yubikey;passwort;keepass;

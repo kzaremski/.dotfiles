@@ -1,0 +1,71 @@
+#!/bin/bash
+# Pick an unmounted partition and mount it.
+#
+# Non-APFS filesystems go through udisksctl, which mounts under /run/media
+# as your own user with no root needed. APFS has no kernel driver, so it
+# needs apfs-fuse under pkexec, mounted read-only at /mnt/<name>.
+#
+# The disk holding / is excluded so this can never offer a system partition.
+set -uo pipefail
+
+# Resolve the physical disk behind / -- walking the inverse tree so this still
+# works when root sits on LUKS or LVM, where PKNAME stops at the mapper device.
+# Collect /boot too, in case they live on different disks.
+system_disk() {
+  local src
+  src=$(findmnt -no SOURCE "$1" 2>/dev/null | sed 's/\[.*//')
+  [[ -n $src ]] || return
+  # lsblk draws a tree, so the last line looks like "  \u2514\u2500/dev/nvme0n1";
+  # strip everything before the first slash.
+  lsblk -pnso NAME "$src" 2>/dev/null | tail -1 | sed 's|^[^/]*||'
+}
+ROOT_DISK=$(system_disk /)
+BOOT_DISK=$(system_disk /boot)
+
+mapfile -t ROWS < <(python3 - "$ROOT_DISK" "$BOOT_DISK" <<'PY'
+import json, subprocess, sys
+protected = {a for a in sys.argv[1:] if a}
+out = subprocess.run(["lsblk","-Jpo","NAME,FSTYPE,SIZE,LABEL,MOUNTPOINT,TYPE,PKNAME"],
+                     capture_output=True, text=True).stdout
+def walk(nodes):
+    for n in nodes:
+        yield n
+        yield from walk(n.get("children") or [])
+for n in walk(json.loads(out)["blockdevices"]):
+    if n.get("type") != "part":            continue
+    if n.get("mountpoint"):                continue   # already mounted
+    fs = n.get("fstype") or ""
+    if fs in ("", "swap", "crypto_LUKS"):  continue   # nothing mountable
+    if n.get("pkname") in protected:       continue   # system disk
+    label = n.get("label") or "(no label)"
+    print("\t".join([n["name"], fs, n.get("size") or "?", label]))
+PY
+)
+
+if ((${#ROWS[@]} == 0)); then
+  echo "No unmounted partitions found."
+  read -rsn1 -p "Press any key..."; exit 0
+fi
+
+CHOICE=$(printf '%s\n' "${ROWS[@]}" \
+  | awk -F'\t' '{printf "%-14s %-9s %-8s %s\n", $1, $2, $3, $4}' \
+  | gum choose --header "Select a partition to mount") || exit 1
+
+DEV=$(awk '{print $1}' <<<"$CHOICE")
+FS=$(awk '{print $2}' <<<"$CHOICE")
+LABEL=$(cut -d' ' -f4- <<<"$CHOICE" | sed 's/^ *//;s/ *$//')
+
+if [[ $FS == apfs ]]; then
+  NAME=$(basename "$DEV")
+  [[ $LABEL != "(no label)" && -n $LABEL ]] && NAME=$(tr -cd '[:alnum:]._-' <<<"${LABEL// /_}")
+  MP="/mnt/$NAME"
+  echo "APFS has no kernel driver - mounting read-only with apfs-fuse at $MP"
+  pkexec bash -c "
+    grep -q '^user_allow_other' /etc/fuse.conf 2>/dev/null || echo user_allow_other >> /etc/fuse.conf
+    mkdir -p '$MP'
+    apfs-fuse -o ro,allow_other '$DEV' '$MP'
+  " && echo "Mounted read-only at $MP" || echo "Mount failed"
+else
+  udisksctl mount -b "$DEV" || echo "Mount failed"
+fi
+read -rsn1 -p "Press any key..."

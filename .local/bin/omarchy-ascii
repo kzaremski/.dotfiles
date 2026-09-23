@@ -1,0 +1,12 @@
+#!/bin/bash
+# Render text in the font Omarchy's logo uses: Delta Corps Priest 1.
+#
+# The stock figlet package ships no block-character fonts (checked all 420 in
+# figlet-fonts -- none use U+2588 and friends). This one is from
+# xero/figlet-fonts and lives under ~/.local/share/figlet/fonts, so it needs
+# no root and survives package updates.
+#
+#   omarchy-ascii "Back in five"
+#   omarchy-ascii "BRB" > sign.txt
+#   ASCII_WIDTH=120 omarchy-ascii "narrow"
+exec figlet -d "$HOME/.local/share/figlet/fonts" -f "Delta Corps Priest 1" -w "${ASCII_WIDTH:-400}" "$@"

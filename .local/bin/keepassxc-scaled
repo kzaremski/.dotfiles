@@ -1,0 +1,33 @@
+#!/bin/bash
+# Launch KeePassXC on XWayland with a scale factor matching the CURRENT monitor.
+#
+# KeePassXC is pinned to XWayland (see the desktop override) because native
+# Wayland hits Hyprland bugs that break clicks when tiled. But Omarchy sets
+# xwayland:force_zero_scaling = true, so XWayland clients render at 1x and must
+# scale themselves via QT_SCALE_FACTOR -- and that is a PROCESS-GLOBAL env var
+# with no per-monitor equivalent.
+#
+# Hardcoding 2 is right for the built-in 2560x1600 panel and twice too big on
+# the 1920x1080 dock monitors. So read the focused monitor's scale at launch
+# and match it.
+#
+# Limitation: this is fixed at launch. Docking, undocking, or dragging the
+# window to a monitor with a different scale while KeePassXC is running will
+# not update it -- quit and relaunch. That is inherent to XWayland.
+scale=$(hyprctl monitors -j 2>/dev/null | python3 -c '
+import json,sys
+try:
+    mons = json.load(sys.stdin)
+except Exception:
+    print(1); raise SystemExit
+for m in mons:
+    if m.get("focused"):
+        print(m.get("scale") or 1); raise SystemExit
+print(mons[0].get("scale") if mons else 1)
+' 2>/dev/null)
+
+case "$scale" in
+  ''|*[!0-9.]*) scale=1 ;;
+esac
+
+exec env QT_QPA_PLATFORM=xcb QT_SCALE_FACTOR="$scale" keepassxc "$@"
