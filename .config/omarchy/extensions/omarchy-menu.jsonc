@@ -1,0 +1,117 @@
+{
+  // Extend the Quickshell Omarchy menu with JSONC.
+  //
+  // IDs are object keys. The parent is inferred from the dotted id, so
+  // "personal.notes" appears under "personal", and "personal" appears on the
+  // root menu. Reuse an existing id to override/extend it.
+  //
+  // Fields:
+  //   icon        Nerd Font glyph shown in the icon column.
+  //   label       Visible row title.
+  //   action      Shell command to run. If omitted, the row is a submenu.
+  //   target      Existing submenu id to open. Use for links/aliases.
+  //   provider    Runtime provider function/command returning JSON rows.
+  //   aliases     alternate `omarchy menu summon <name>` routes; also searchable.
+  //   description Optional subtitle and extra search text.
+  //   when        Shell condition; hide row when it fails.
+  //   checked     Shell condition; append ✓ when it succeeds.
+  //
+  // Examples:
+  // "personal": {"icon":"","label":"Personal"},
+  // "personal.notes": {"icon":"󰎞","label":"Notes","action":"omarchy-launch-editor ~/notes"},
+  // "personal.files": {"icon":"","label":"Files","action":"uwsm-app -- nautilus ~/Documents"},
+  //
+  // Only use provider when a provider_name function or command named "name"
+  // returns JSON rows. Static submenus only need dotted ids.
+  //
+  // Example: replace the default About action by reusing the same id. Existing
+  // fields are kept unless overridden.
+  // "about": {"icon":"","label":"About","action":"omarchy-launch-or-focus-tui \"zsh -c 'fastfetch; read -k 1'\""},
+
+  // ---- Symbols picker -------------------------------------------------
+  // Non-emoji symbols; the built-in picker (SUPER+CTRL+E) is emoji-only.
+  // Insertion reuses omarchy-menu-emoji-insert, which wl-copy's the glyph
+  // then pastes it with wtype -- the same path the emoji picker uses, so it
+  // types into whatever app has focus.
+  // Lives under "trigger", next to the built-in trigger.emoji row.
+  // Bound to SUPER+CTRL+U in ~/.config/hypr/bindings.lua.
+  "trigger.symbols": {"icon":"∑","label":"Symbols","aliases":["symbol","sym","symbols","unicode","special"],"description":"Trademark, degree, dashes, math, arrows"},
+  "trigger.symbols.em-dash": {"icon":"—","label":"Em dash","action":"omarchy-menu-emoji-insert '—'","description":"—  emdash long hyphen punctuation"},
+  "trigger.symbols.en-dash": {"icon":"–","label":"En dash","action":"omarchy-menu-emoji-insert '–'","description":"–  endash range hyphen"},
+  "trigger.symbols.ellipsis": {"icon":"…","label":"Ellipsis","action":"omarchy-menu-emoji-insert '…'","description":"…  dots three points"},
+  "trigger.symbols.degree": {"icon":"°","label":"Degree","action":"omarchy-menu-emoji-insert '°'","description":"°  degrees temperature angle"},
+  "trigger.symbols.trademark": {"icon":"™","label":"Trademark","action":"omarchy-menu-emoji-insert '™'","description":"™  tm mark legal"},
+  "trigger.symbols.copyright": {"icon":"©","label":"Copyright","action":"omarchy-menu-emoji-insert '©'","description":"©  c legal"},
+  "trigger.symbols.registered": {"icon":"®","label":"Registered","action":"omarchy-menu-emoji-insert '®'","description":"®  r registered trademark legal"},
+  "trigger.symbols.service-mark": {"icon":"℠","label":"Service mark","action":"omarchy-menu-emoji-insert '℠'","description":"℠  sm legal"},
+  "trigger.symbols.bullet": {"icon":"•","label":"Bullet","action":"omarchy-menu-emoji-insert '•'","description":"•  dot list point"},
+  "trigger.symbols.middle-dot": {"icon":"·","label":"Middle dot","action":"omarchy-menu-emoji-insert '·'","description":"·  interpunct separator"},
+  "trigger.symbols.section": {"icon":"§","label":"Section","action":"omarchy-menu-emoji-insert '§'","description":"§  legal clause"},
+  "trigger.symbols.pilcrow": {"icon":"¶","label":"Pilcrow","action":"omarchy-menu-emoji-insert '¶'","description":"¶  paragraph mark"},
+  "trigger.symbols.dagger": {"icon":"†","label":"Dagger","action":"omarchy-menu-emoji-insert '†'","description":"†  obelisk footnote"},
+  "trigger.symbols.double-dagger": {"icon":"‡","label":"Double dagger","action":"omarchy-menu-emoji-insert '‡'","description":"‡  diesis footnote"},
+  "trigger.symbols.per-mille": {"icon":"‰","label":"Per mille","action":"omarchy-menu-emoji-insert '‰'","description":"‰  permille per thousand"},
+  "trigger.symbols.prime": {"icon":"′","label":"Prime","action":"omarchy-menu-emoji-insert '′'","description":"′  minutes feet arcminute"},
+  "trigger.symbols.double-prime": {"icon":"″","label":"Double prime","action":"omarchy-menu-emoji-insert '″'","description":"″  seconds inches arcsecond"},
+  "trigger.symbols.left-double-quote": {"icon":"“","label":"Left double quote","action":"omarchy-menu-emoji-insert '“'","description":"“  open curly smart quote"},
+  "trigger.symbols.right-double-quote": {"icon":"”","label":"Right double quote","action":"omarchy-menu-emoji-insert '”'","description":"”  close curly smart quote"},
+  "trigger.symbols.left-single-quote": {"icon":"‘","label":"Left single quote","action":"omarchy-menu-emoji-insert '‘'","description":"‘  open curly"},
+  "trigger.symbols.right-single-quote": {"icon":"’","label":"Right single quote","action":"omarchy-menu-emoji-insert '’'","description":"’  close curly apostrophe"},
+  "trigger.symbols.plus-minus": {"icon":"±","label":"Plus minus","action":"omarchy-menu-emoji-insert '±'","description":"±  plusminus tolerance"},
+  "trigger.symbols.multiply": {"icon":"×","label":"Multiply","action":"omarchy-menu-emoji-insert '×'","description":"×  times cross product"},
+  "trigger.symbols.divide": {"icon":"÷","label":"Divide","action":"omarchy-menu-emoji-insert '÷'","description":"÷  division obelus"},
+  "trigger.symbols.approximately": {"icon":"≈","label":"Approximately","action":"omarchy-menu-emoji-insert '≈'","description":"≈  approx almost equal"},
+  "trigger.symbols.not-equal": {"icon":"≠","label":"Not equal","action":"omarchy-menu-emoji-insert '≠'","description":"≠  ne inequality"},
+  "trigger.symbols.less-or-equal": {"icon":"≤","label":"Less or equal","action":"omarchy-menu-emoji-insert '≤'","description":"≤  lte le"},
+  "trigger.symbols.greater-or-equal": {"icon":"≥","label":"Greater or equal","action":"omarchy-menu-emoji-insert '≥'","description":"≥  gte ge"},
+  "trigger.symbols.infinity": {"icon":"∞","label":"Infinity","action":"omarchy-menu-emoji-insert '∞'","description":"∞  infinite"},
+  "trigger.symbols.square-root": {"icon":"√","label":"Square root","action":"omarchy-menu-emoji-insert '√'","description":"√  sqrt radical"},
+  "trigger.symbols.sum": {"icon":"∑","label":"Sum","action":"omarchy-menu-emoji-insert '∑'","description":"∑  sigma summation total"},
+  "trigger.symbols.product": {"icon":"∏","label":"Product","action":"omarchy-menu-emoji-insert '∏'","description":"∏  product notation"},
+  "trigger.symbols.integral": {"icon":"∫","label":"Integral","action":"omarchy-menu-emoji-insert '∫'","description":"∫  calculus"},
+  "trigger.symbols.delta": {"icon":"∆","label":"Delta","action":"omarchy-menu-emoji-insert '∆'","description":"∆  change difference"},
+  "trigger.symbols.pi": {"icon":"π","label":"Pi","action":"omarchy-menu-emoji-insert 'π'","description":"π  circle constant"},
+  "trigger.symbols.micro": {"icon":"µ","label":"Micro","action":"omarchy-menu-emoji-insert 'µ'","description":"µ  micron mu"},
+  "trigger.symbols.ohm": {"icon":"Ω","label":"Ohm","action":"omarchy-menu-emoji-insert 'Ω'","description":"Ω  omega resistance"},
+  "trigger.symbols.empty-set": {"icon":"∅","label":"Empty set","action":"omarchy-menu-emoji-insert '∅'","description":"∅  null void diameter"},
+  "trigger.symbols.right-arrow": {"icon":"→","label":"Right arrow","action":"omarchy-menu-emoji-insert '→'","description":"→  arrow east to"},
+  "trigger.symbols.left-arrow": {"icon":"←","label":"Left arrow","action":"omarchy-menu-emoji-insert '←'","description":"←  arrow west from"},
+  "trigger.symbols.up-arrow": {"icon":"↑","label":"Up arrow","action":"omarchy-menu-emoji-insert '↑'","description":"↑  arrow north"},
+  "trigger.symbols.down-arrow": {"icon":"↓","label":"Down arrow","action":"omarchy-menu-emoji-insert '↓'","description":"↓  arrow south"},
+  "trigger.symbols.left-right-arrow": {"icon":"↔","label":"Left-right arrow","action":"omarchy-menu-emoji-insert '↔'","description":"↔  bidirectional"},
+  "trigger.symbols.implies": {"icon":"⇒","label":"Implies","action":"omarchy-menu-emoji-insert '⇒'","description":"⇒  double arrow therefore"},
+  "trigger.symbols.euro": {"icon":"€","label":"Euro","action":"omarchy-menu-emoji-insert '€'","description":"€  currency eur"},
+  "trigger.symbols.pound": {"icon":"£","label":"Pound","action":"omarchy-menu-emoji-insert '£'","description":"£  currency gbp sterling"},
+  "trigger.symbols.yen": {"icon":"¥","label":"Yen","action":"omarchy-menu-emoji-insert '¥'","description":"¥  currency jpy"},
+  "trigger.symbols.cent": {"icon":"¢","label":"Cent","action":"omarchy-menu-emoji-insert '¢'","description":"¢  currency cents"},
+  "trigger.symbols.one-half": {"icon":"½","label":"One half","action":"omarchy-menu-emoji-insert '½'","description":"½  fraction half"},
+  "trigger.symbols.one-quarter": {"icon":"¼","label":"One quarter","action":"omarchy-menu-emoji-insert '¼'","description":"¼  fraction"},
+  "trigger.symbols.three-quarters": {"icon":"¾","label":"Three quarters","action":"omarchy-menu-emoji-insert '¾'","description":"¾  fraction"},
+  "trigger.symbols.check": {"icon":"✓","label":"Check","action":"omarchy-menu-emoji-insert '✓'","description":"✓  tick yes done correct"},
+  "trigger.symbols.cross": {"icon":"✗","label":"Cross","action":"omarchy-menu-emoji-insert '✗'","description":"✗  x no wrong"},
+  "trigger.symbols.star-filled": {"icon":"★","label":"Star filled","action":"omarchy-menu-emoji-insert '★'","description":"★  favourite rating"},
+  "trigger.symbols.star-outline": {"icon":"☆","label":"Star outline","action":"omarchy-menu-emoji-insert '☆'","description":"☆  favourite rating empty"},
+  "trigger.symbols.numero": {"icon":"№","label":"Numero","action":"omarchy-menu-emoji-insert '№'","description":"№  number sign"},
+  "trigger.symbols.command": {"icon":"⌘","label":"Command","action":"omarchy-menu-emoji-insert '⌘'","description":"⌘  cmd mac meta key"},
+  "trigger.symbols.option": {"icon":"⌥","label":"Option","action":"omarchy-menu-emoji-insert '⌥'","description":"⌥  alt mac key"},
+  "trigger.symbols.shift": {"icon":"⇧","label":"Shift","action":"omarchy-menu-emoji-insert '⇧'","description":"⇧  key modifier"},
+  "trigger.symbols.hammer-and-sickle": {"icon":"☭","label":"Hammer and sickle","action":"omarchy-menu-emoji-insert '☭'","description":"☭  soviet ussr communism hammer sickle"},
+  "trigger.symbols.peace": {"icon":"☮","label":"Peace","action":"omarchy-menu-emoji-insert '☮'","description":"☮  peace sign"},
+  "trigger.symbols.yin-yang": {"icon":"☯","label":"Yin yang","action":"omarchy-menu-emoji-insert '☯'","description":"☯  taijitu balance tao"},
+  "trigger.symbols.skull-and-crossbones": {"icon":"☠","label":"Skull and crossbones","action":"omarchy-menu-emoji-insert '☠'","description":"☠  skull death poison danger toxic pirate"},
+  "trigger.symbols.gear": {"icon":"⚙","label":"Gear","action":"omarchy-menu-emoji-insert '⚙'","description":"⚙  cog settings config mechanical"},
+  "trigger.symbols.high-voltage": {"icon":"⚡","label":"High voltage","action":"omarchy-menu-emoji-insert '⚡'","description":"⚡  lightning bolt power electric energy fast"},
+  "trigger.symbols.warning": {"icon":"⚠","label":"Warning","action":"omarchy-menu-emoji-insert '⚠'","description":"⚠  caution alert danger attention"},
+  "trigger.symbols.recycling": {"icon":"♻","label":"Recycling","action":"omarchy-menu-emoji-insert '♻'","description":"♻  recycle reuse environment green"},
+  // ---- Drives ---------------------------------------------------------
+  // Mount/unmount external disks. Non-APFS goes through udisksctl (no root,
+  // lands in /run/media); APFS needs apfs-fuse under pkexec since there is no
+  // kernel driver, and is always mounted READ-ONLY. The disks holding / and
+  // /boot are never offered.
+  // Both run in a floating terminal because gum needs a TTY.
+  "drives": {"icon":"\udb80\udeca","label":"Drives","aliases":["disk","disks","drive","mount","usb"],"description":"Mount and unmount external disks"},
+  "drives.mount": {"icon":"\udb81\udd3a","label":"Mount a drive","aliases":["mount"],"description":"Pick an unmounted partition and mount it","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-mount'\""},
+  "drives.unmount": {"icon":"\udb81\udd3b","label":"Unmount a drive","aliases":["unmount","eject","umount"],"description":"Safely unmount a removable filesystem","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-unmount'\""},
+  "drives.list": {"icon":"\uf0a0","label":"List drives","aliases":["lsblk","blocks"],"description":"Show all block devices and mountpoints","action":"omarchy-launch-or-focus-tui \"bash -c 'lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT; read -rsn1 -p \\\"Press any key...\\\"'\""},
+
+}
