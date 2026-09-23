@@ -1,0 +1,59 @@
+# junkfood, ported from the oh-my-zsh theme of the same name.
+#
+# Original renders:
+#   #( 09/22/26@03:45PM )( user@host ):~/path@branch✔
+#      <- second line is bare indent, no prompt symbol
+#
+# Colours follow the original: red #, white parens, yellow date, green user,
+# blue host, cyan path, white @branch, green ✔ clean / red ✗✗✗ dirty.
+
+add_newline = false
+command_timeout = 500
+
+format = """
+[#](bold red)[\\( ](bold white)$time[ \\)\\( ](bold white)$username[@](bold white)$hostname[ \\):](bold white)$directory$git_branch${custom.gitstate}
+$character"""
+
+[time]
+disabled = false
+time_format = "%m/%d/%y@%I:%M%p"
+format = "[$time]($style)"
+style = "bold yellow"
+
+[username]
+show_always = true
+format = "[$user]($style)"
+style_user = "bold green"
+style_root = "bold red"
+
+[hostname]
+ssh_only = false
+format = "[$hostname]($style)"
+style = "bold blue"
+
+[directory]
+format = "[$path]($style)"
+style = "cyan"
+truncate_to_repo = false
+truncation_length = 0
+
+[git_branch]
+format = "[@](bold white)[$branch](bold white)"
+
+# junkfood shows a single ✔ when clean and ✗✗✗ when dirty. starship's native
+# git_status emits one glyph per change category, so it can't express that -
+# one custom module with embedded ANSI matches the original exactly.
+[custom.gitstate]
+when = "git rev-parse --is-inside-work-tree"
+command = "if [ -n \"$(git status --porcelain 2>/dev/null)\" ]; then printf '\\033[1;31m✗✗✗\\033[0m'; else printf '\\033[1;32m✔\\033[0m'; fi"
+format = "$output"
+shell = ["bash", "--noprofile", "--norc"]
+
+# Original has no prompt symbol - just an indented blank line.
+[character]
+format = "   "
+success_symbol = ""
+error_symbol = ""
+
+[git_status]
+disabled = true
