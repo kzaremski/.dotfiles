@@ -1,0 +1,120 @@
+#!/bin/bash
+# comrade -- offline assistant. Wraps a local ollama model with context profiles.
+#
+# Deliberately has NO tools: it cannot read your filesystem or edit files. That
+# is the whole point -- skipping an agent's system prompt and tool schemas takes
+# the prompt from ~15,000 tokens down to ~1,300, which on this hardware is the
+# difference between minutes and seconds. Use crush/opencode when you need an
+# agent that can actually touch files.
+
+set -uo pipefail
+
+CTX_DIR="${COMRADE_CONTEXTS:-$HOME/.config/comrade/contexts}"
+MODEL="${COMRADE_MODEL:-qwen3:14b}"
+THINK="false"
+AUTO=1
+declare -a WANTED=()
+
+usage() {
+  cat <<'USAGE'
+comrade -- offline assistant
+
+  comrade "question"                  ask, with auto-detected context
+  comrade -c hypr "question"          force a context profile
+  comrade -c none "question"          no context at all
+  cat file | comrade "question"       pipe a file in
+  comrade -l                          list context profiles
+
+  -c, --context NAME   context profile (repeatable); "none" disables all
+  -m, --model NAME     ollama model (default: qwen3:14b)
+  -t, --think          enable the model's thinking mode (slower, better on hard ones)
+  -l, --list           list available contexts
+  -h, --help           this
+
+Contexts are plain markdown in ~/.config/comrade/contexts/.
+Add a profile by dropping a .md file there. machine.md is always included
+unless you pass "-c none".
+USAGE
+}
+
+list_contexts() {
+  echo "contexts in $CTX_DIR:"
+  local f
+  for f in "$CTX_DIR"/*.md; do
+    [ -e "$f" ] || { echo "  (none)"; return; }
+    printf "  %-12s %s\n" "$(basename "$f" .md)" "$(head -1 "$f" | sed 's/^#\+ *//')"
+  done
+}
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    -c|--context) WANTED+=("$2"); AUTO=0; shift 2 ;;
+    -m|--model)   MODEL="$2"; shift 2 ;;
+    -t|--think)   THINK="true"; shift ;;
+    -l|--list)    list_contexts; exit 0 ;;
+    -h|--help)    usage; exit 0 ;;
+    --)           shift; break ;;
+    -*)           echo "comrade: unknown option $1" >&2; exit 2 ;;
+    *)            break ;;
+  esac
+done
+
+QUESTION="$*"
+
+# Only slurp stdin when it is genuinely a pipe or a redirected file. Testing
+# `! -t 0` alone is not enough: in a non-interactive shell stdin can be an open
+# descriptor that never reaches EOF, and `cat` then blocks forever.
+PIPED=""
+if [ ! -t 0 ] && { [ -p /dev/stdin ] || [ -f /dev/stdin ]; }; then
+  PIPED="$(cat)"
+fi
+
+if [ -z "$QUESTION" ] && [ -z "$PIPED" ]; then usage; exit 2; fi
+
+# Crude keyword auto-detect. Wrong sometimes; -c always overrides.
+if [ "$AUTO" -eq 1 ]; then
+  if grep -qiE 'hypr|omarchy|workspace|keybind|monitor|wayland|waybar|quickshell|bindings\.lua|looknfeel' \
+       <<<"$QUESTION $PIPED"; then
+    WANTED+=(hypr)
+  fi
+fi
+
+SKIP_ALL=0
+for c in ${WANTED+"${WANTED[@]}"}; do [ "$c" = "none" ] && SKIP_ALL=1; done
+
+# Validate context names BEFORE building the prompt. build_prompt runs inside a
+# pipeline subshell, so an `exit` in there kills only the subshell and ollama
+# would still run with a truncated prompt.
+for c in ${WANTED+"${WANTED[@]}"}; do
+  [ "$c" = "none" ] && continue
+  if [ ! -f "$CTX_DIR/$c.md" ]; then
+    echo "comrade: no such context '$c' (try: comrade -l)" >&2
+    exit 3
+  fi
+done
+
+# Build the prompt. machine.md goes first so the cached prefix stays stable
+# across calls -- llama.cpp reuses it, which is why a warm ask is seconds.
+build_prompt() {
+  if [ "$SKIP_ALL" -eq 0 ]; then
+    [ -f "$CTX_DIR/machine.md" ] && { cat "$CTX_DIR/machine.md"; echo; }
+    local seen=" "
+    for c in ${WANTED+"${WANTED[@]}"}; do
+      [ "$c" = "none" ] && continue
+      case "$seen" in *" $c "*) continue ;; esac
+      seen="$seen$c "
+      if [ -f "$CTX_DIR/$c.md" ]; then
+        cat "$CTX_DIR/$c.md"; echo
+      else
+        echo "comrade: no such context '$c' (try: comrade -l)" >&2
+        exit 3
+      fi
+    done
+  fi
+  if [ -n "$PIPED" ]; then
+    printf '%s\n%s\n%s\n\n' '--- input ---' "$PIPED" '--- end input ---'
+  fi
+  [ -n "$QUESTION" ] && printf 'Question: %s\n' "$QUESTION"
+}
+
+build_prompt | ollama run "$MODEL" --think="$THINK"

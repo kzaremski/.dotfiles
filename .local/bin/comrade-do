@@ -1,0 +1,162 @@
+#!/usr/bin/env python3
+"""comrade-do -- a minimal local agent loop.
+
+Why this exists: full agent frameworks (crush, opencode) prepend ~15,000 tokens
+of system prompt and tool schemas to every turn. At ~100 tok/s prompt eval on
+this machine that is ~2.5 minutes before the first output token. This loop
+ships four terse tools in ~1K tokens instead.
+
+Read-only by default. Shell execution requires --allow-exec, and each command
+is confirmed unless --yes is passed.
+"""
+import argparse, json, os, subprocess, sys, urllib.request
+
+HOST = os.environ.get("OLLAMA_HOST", "http://localhost:11434")
+CTX_DIR = os.path.expanduser(
+    os.environ.get("COMRADE_CONTEXTS", "~/.config/comrade/contexts"))
+MAX_OUT = 4000           # truncate tool output so one big file can't blow context
+
+def c(code, s):
+    return s if not sys.stdout.isatty() else f"\033[{code}m{s}\033[0m"
+
+# ---------------------------------------------------------------- tools
+
+def t_read_file(path, **_):
+    p = os.path.expanduser(path)
+    if not os.path.isfile(p):
+        return f"error: not a file: {p}"
+    with open(p, "r", errors="replace") as f:
+        return f.read(MAX_OUT)
+
+def t_list_dir(path=".", **_):
+    p = os.path.expanduser(path)
+    if not os.path.isdir(p):
+        return f"error: not a directory: {p}"
+    out = []
+    for e in sorted(os.listdir(p))[:200]:
+        full = os.path.join(p, e)
+        out.append(f"{'d' if os.path.isdir(full) else 'f'} {e}")
+    return "\n".join(out) or "(empty)"
+
+def t_search(pattern, path=".", **_):
+    p = os.path.expanduser(path)
+    try:
+        r = subprocess.run(["rg", "--line-number", "--no-heading", "-S",
+                            "--max-count", "40", pattern, p],
+                           capture_output=True, text=True, timeout=30)
+        return (r.stdout or r.stderr or "(no matches)")[:MAX_OUT]
+    except FileNotFoundError:
+        return "error: ripgrep (rg) not installed"
+    except subprocess.TimeoutExpired:
+        return "error: search timed out"
+
+def t_run(cmd, **_):
+    try:
+        r = subprocess.run(["bash", "-lc", cmd], capture_output=True,
+                           text=True, timeout=60)
+        return (f"exit={r.returncode}\n{r.stdout}{r.stderr}")[:MAX_OUT]
+    except subprocess.TimeoutExpired:
+        return "error: command timed out"
+
+TOOLS = {
+    "read_file": (t_read_file, "Read a text file", {
+        "path": ("string", "path to the file")}, ["path"]),
+    "list_dir": (t_list_dir, "List a directory", {
+        "path": ("string", "directory path")}, []),
+    "search": (t_search, "Search file contents with ripgrep", {
+        "pattern": ("string", "regex to search for"),
+        "path": ("string", "file or directory to search")}, ["pattern"]),
+    "run": (t_run, "Run a bash command and return its output", {
+        "cmd": ("string", "the command")}, ["cmd"]),
+}
+
+def schemas(names):
+    out = []
+    for n in names:
+        _, desc, props, req = TOOLS[n]
+        out.append({"type": "function", "function": {
+            "name": n, "description": desc,
+            "parameters": {"type": "object", "required": req,
+                           "properties": {k: {"type": t, "description": d}
+                                          for k, (t, d) in props.items()}}}})
+    return out
+
+# ---------------------------------------------------------------- loop
+
+def chat(model, messages, tools, think):
+    body = json.dumps({"model": model, "messages": messages, "tools": tools,
+                       "stream": False, "think": think}).encode()
+    req = urllib.request.Request(f"{HOST}/api/chat", data=body,
+                                 headers={"Content-Type": "application/json"})
+    with urllib.request.urlopen(req, timeout=600) as r:
+        return json.load(r)
+
+def build_system(contexts):
+    parts = []
+    m = os.path.join(CTX_DIR, "machine.md")
+    if os.path.isfile(m):
+        parts.append(open(m).read())
+    for name in contexts:
+        f = os.path.join(CTX_DIR, f"{name}.md")
+        if not os.path.isfile(f):
+            sys.exit(f"comrade-do: no such context '{name}'")
+        parts.append(open(f).read())
+    parts.append(
+        "You have tools. Use them to gather facts before answering; do not "
+        "guess at file contents. When you have the answer, reply in prose "
+        "without calling a tool.")
+    return "\n\n".join(parts)
+
+def main():
+    ap = argparse.ArgumentParser(prog="comrade-do")
+    ap.add_argument("task", nargs="+")
+    ap.add_argument("-m", "--model", default=os.environ.get("COMRADE_MODEL", "qwen3:14b"))
+    ap.add_argument("-c", "--context", action="append", default=[])
+    ap.add_argument("--max-steps", type=int, default=8)
+    ap.add_argument("--allow-exec", action="store_true", help="enable the run tool")
+    ap.add_argument("-y", "--yes", action="store_true", help="don't confirm commands")
+    ap.add_argument("-t", "--think", action="store_true")
+    a = ap.parse_args()
+
+    names = ["read_file", "list_dir", "search"] + (["run"] if a.allow_exec else [])
+    tools = schemas(names)
+    messages = [{"role": "system", "content": build_system(a.context)},
+                {"role": "user", "content": " ".join(a.task)}]
+
+    for step in range(1, a.max_steps + 1):
+        resp = chat(a.model, messages, tools, a.think)
+        msg = resp.get("message", {}) or {}
+        calls = msg.get("tool_calls") or []
+        if not calls:
+            print(msg.get("content", "").strip())
+            return
+        messages.append(msg)
+        for tc in calls:
+            fn = tc.get("function", {})
+            name = fn.get("name")
+            args = fn.get("arguments") or {}
+            if isinstance(args, str):
+                try: args = json.loads(args)
+                except Exception: args = {}
+            print(c("36", f"  [{step}] {name}({json.dumps(args)[:110]})"),
+                  file=sys.stderr)
+            if name not in TOOLS or (name == "run" and not a.allow_exec):
+                result = f"error: tool '{name}' not available"
+            elif name == "run" and not a.yes:
+                sys.stderr.write(c("33", f"      run this? [y/N] "))
+                sys.stderr.flush()
+                result = (TOOLS[name][0](**args)
+                          if sys.stdin.readline().strip().lower().startswith("y")
+                          else "error: user declined")
+            else:
+                try:
+                    result = TOOLS[name][0](**args)
+                except TypeError as e:
+                    result = f"error: bad arguments: {e}"
+            messages.append({"role": "tool", "tool_name": name, "content": str(result)})
+
+    print(c("31", f"comrade-do: hit the {a.max_steps}-step limit"), file=sys.stderr)
+    sys.exit(4)
+
+if __name__ == "__main__":
+    main()
