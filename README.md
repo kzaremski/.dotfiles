@@ -21,6 +21,60 @@ carry over unchanged. The X11-specific parts — i3, i3status, picom, dunst,
 
 macOS is also covered via Aerospace, an i3-style tiling WM.
 
+## Rebuilding this machine
+
+Omarchy ISO plus this repo. Order matters.
+
+```bash
+# 1. Clone
+git clone git@github.com:kzaremski/.dotfiles.git ~/.dotfiles && cd ~/.dotfiles
+
+# 2. Packages (explicit installs only; pacman pulls deps back itself)
+./.local/bin/dotfiles-packages --install
+
+# 3. User config -- symlinks into $HOME
+python3 dotfiles.py --label omarchy --yes
+
+# 4. System files -- copied as root, never symlinked (see "System files" below)
+python3 dotfiles.py --import-system
+
+# 5. Services
+systemctl --user daemon-reload
+```
+
+The `default.target.wants` enable-symlinks are tracked, so user services come
+back already enabled.
+
+### Manual steps that cannot be automated
+
+| | |
+|---|---|
+| Fingerprint | `fprintd-enroll -f right-index-finger` (biometric, must be re-enrolled) |
+| Tailscale | `tailscale up --ssh` (node must re-authenticate) |
+| DaVinci Resolve | Install the Studio AUR package with its zip, activate, then `pkexec resolve-perms "$USER"` |
+| ollama models | `ollama pull qwen3:14b` (~9 GB, deliberately not in git) |
+| SSH / GPG keys | Restore from your own secure backup. Never in this repo. |
+
+See `packages/README.md` for the AUR packages that need a human, and
+`.config/comrade/contexts/` for the accumulated notes on why things are the way
+they are.
+
+### System files
+
+Config outside `$HOME` lives in `root/` and is handled by plain copy, never
+symlinked -- `/etc/pam.d` files must stay root-owned, and a symlink into this
+user-writable repo would let an unprivileged user rewrite their own auth rules.
+
+```bash
+python3 dotfiles.py --import-system    # repo  -> system (needs root)
+python3 dotfiles.py --export-system    # system -> repo  (plain read)
+```
+
+Import batches everything into a single elevated call, keeps a `.dotfiles-orig`
+backup the first time it touches a file, and prefers `pkexec` in a graphical
+session so the polkit agent can take a fingerprint. `--unlink` never touches
+system entries.
+
 ## Components
 
 ### Window Manager & Desktop
@@ -151,6 +205,11 @@ Multi-monitor setups defined in `screenlayout/`:
 - `main.sh` - Primary configuration
 
 ## Installation
+
+> **Note:** the section below is from the X230 / i3 / X11 era and is kept for the
+> `x230` and `legacy` labels. For rebuilding the current Omarchy machine, use
+> **Rebuilding this machine** above.
+
 
 ### Prerequisites
 

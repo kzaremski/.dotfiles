@@ -1,0 +1,23 @@
+[Unit]
+Description=Ollama (user instance)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/ollama serve
+Restart=on-failure
+RestartSec=3
+# Models live in $HOME, so no root is ever needed to pull or remove them.
+Environment="OLLAMA_MODELS=%h/.ollama/models"
+# Keep the model resident between questions so the assistant feels instant.
+# It unloads after this, freeing the RAM back to the desktop.
+Environment="OLLAMA_KEEP_ALIVE=15m"
+# ollama drops integrated GPUs by default; the 890M is the only GPU here.
+Environment="OLLAMA_IGPU_ENABLE=1"
+# Default is 4096, too small for code. KV cache is ~160 MiB per 1K tokens,
+# so 32K costs ~5 GiB -- comfortable inside the 19.5 GiB GPU ceiling.
+Environment="OLLAMA_CONTEXT_LENGTH=32768"
+
+[Install]
+WantedBy=default.target

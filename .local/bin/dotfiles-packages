@@ -1,0 +1,38 @@
+#!/bin/bash
+# Save or restore the explicitly-installed package lists.
+#
+#   dotfiles-packages --save      refresh packages/*.txt from this system
+#   dotfiles-packages --install   install everything in those lists
+#
+# Only explicit installs are recorded; pacman pulls dependencies back itself.
+# --needed means anything the base image already has is skipped.
+set -uo pipefail
+repo_root="${DOTFILES_DIR:-$HOME/.dotfiles}"
+dir="$repo_root/packages"
+
+case "${1:-}" in
+  --save)
+    mkdir -p "$dir"
+    pacman -Qqen > "$dir/repo.txt"
+    pacman -Qqem > "$dir/aur.txt"
+    echo "  saved: $(wc -l < "$dir/repo.txt") repo, $(wc -l < "$dir/aur.txt") AUR"
+    ;;
+  --install)
+    [ -f "$dir/repo.txt" ] || { echo "no $dir/repo.txt" >&2; exit 1; }
+    echo "==> repo packages"
+    sudo pacman -S --needed --noconfirm - < "$dir/repo.txt"
+    if [ -f "$dir/aur.txt" ] && command -v yay >/dev/null; then
+      echo "==> AUR packages (some need manual steps -- see packages/README.md)"
+      # davinci-resolve-studio needs a local zip; skip it and let the user do it.
+      grep -v '^davinci-resolve-studio$' "$dir/aur.txt" | while read -r p; do
+        [ -n "$p" ] && yay -S --needed --noconfirm "$p"
+      done
+      grep -q '^davinci-resolve-studio$' "$dir/aur.txt" &&
+        echo "  SKIPPED davinci-resolve-studio -- needs the Studio zip, see packages/README.md"
+    fi
+    ;;
+  *)
+    sed -n '2,8p' "$0" | sed 's/^# \?//'
+    exit 2
+    ;;
+esac

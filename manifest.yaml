@@ -65,6 +65,18 @@ dotfiles:
   # must stay root-owned -- a symlink into this user-writable repo would let an
   # unprivileged user rewrite their own auth rules. Apply with --label system,
   # refresh from the live system with --pull-system.
+  - source: etc/systemd/logind.conf.d/30-ignore-lid.conf
+    dest: /etc/systemd/logind.conf.d/30-ignore-lid.conf
+    description: Never sleep on lid close (all three HandleLidSwitch* = ignore)
+    labels: [system, power, omarchy, current]
+    system: true
+
+  - source: etc/UPower/UPower.conf
+    dest: /etc/UPower/UPower.conf
+    description: Hibernate on critical battery (default Auto powers off instead)
+    labels: [system, power, omarchy, current]
+    system: true
+
   - source: etc/pam.d/sudo
     dest: /etc/pam.d/sudo
     description: sudo PAM - fingerprint enabled with lid closed, 10s TTY timeout
@@ -96,6 +108,11 @@ dotfiles:
     dest: .local/bin/resolve-fix-audio
     description: Remux AAC to PCM in place so Resolve on Linux can read the audio
     labels: [tools, omarchy, current]
+
+  - source: .local/bin/dotfiles-packages
+    dest: .local/bin/dotfiles-packages
+    description: Save/restore the explicit package lists in packages/
+    labels: [tools, common, current]
 
   - source: .local/bin/resolve-perms
     dest: .local/bin/resolve-perms
@@ -268,6 +285,11 @@ dotfiles:
     dest: .config/alacritty
     description: Alacritty terminal config
     labels: [terminal, omarchy, current]
+
+  - source: .config/systemd/user
+    dest: .config/systemd/user
+    description: User services (ollama with the iGPU + context overrides)
+    labels: [tools, omarchy, current]
 
   - source: .config/foot
     dest: .config/foot

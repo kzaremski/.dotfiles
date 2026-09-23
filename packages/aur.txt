@@ -1,0 +1,6 @@
+apfs-fuse-git
+davinci-resolve-studio
+figlet-fonts
+google-chrome
+libfprint-ft9201
+onedrive-abraunegg
