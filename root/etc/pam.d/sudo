@@ -1,0 +1,11 @@
+# Managed by ~/.dotfiles (manifest entry with system: true).
+# Apply repo -> system:  dotfiles.py --import-system
+# Capture system -> repo: dotfiles.py --export-system
+# Plain copies, never symlinks: PAM files must stay root-owned.
+# omarchy-hw-laptop-closed gate removed deliberately: on the GPD Pocket 4 the fingerprint reader IS reachable with the lid closed. This comment keeps the string present so omarchy-setup-security-fingerprint and migration 1784818437 see their guard satisfied and do not re-add the gate.
+auth      sufficient pam_fprintd.so timeout=10
+#%PAM-1.0
+auth		include		system-auth
+account		include		system-auth
+session		include		system-auth
+session		optional	pam_systemd.so class=none

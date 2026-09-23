@@ -16,6 +16,8 @@
 import os
 import sys
 import shutil
+import shlex
+import filecmp
 import subprocess
 from pathlib import Path
 from datetime import datetime
@@ -97,7 +99,7 @@ def load_dotfiles_manifest():
             print("Expected 'dotfiles' key with a list of entries.")
             sys.exit(1)
 
-        # Convert to tuple format (source, dest, description, labels)
+        # Convert to tuple format (source, dest, description, labels, system)
         dotfiles = []
         for entry in data['dotfiles']:
             if not all(k in entry for k in ['source', 'dest', 'description']):
@@ -106,7 +108,16 @@ def load_dotfiles_manifest():
             labels = entry.get('labels') or []
             if isinstance(labels, str):
                 labels = [l.strip() for l in labels.split(',') if l.strip()]
-            dotfiles.append((entry['source'], entry['dest'], entry['description'], list(labels)))
+            system = bool(entry.get('system', False))
+            # System entries live under <repo>/root/ and are COPIED to an
+            # absolute destination, never symlinked: /etc/pam.d and friends must
+            # stay root-owned, and a symlink into this user-writable repo would
+            # let an unprivileged user rewrite their own auth rules.
+            if system and not str(entry['dest']).startswith('/'):
+                print(f"Warning: system entry needs an absolute dest, skipping: {entry['dest']}")
+                continue
+            dotfiles.append((entry['source'], entry['dest'], entry['description'],
+                             list(labels), system))
 
         if not dotfiles:
             print(f"Error: No valid dotfiles found in {MANIFEST_FILE}")
@@ -135,6 +146,9 @@ class DotfilesManager:
     def __init__(self):
         self.repo_path = Path(__file__).parent.resolve()
         self.home_path = Path.home()
+        # System files are staged here and copied to absolute destinations.
+        self.root_path = self.repo_path / "root"
+        self.pending_system = []
         self.backup_dir = self.home_path / ".dotfiles-backup"
         # When True, report what would happen but touch nothing on disk.
         self.dry_run = False
@@ -211,13 +225,100 @@ class DotfilesManager:
                 print(f"    {desc}")
             print("-" * 80)
 
-    def get_status(self, source_rel, dest_rel):
+    def paths_for(self, source_rel, dest_rel, system=False):
+        """Resolve a manifest entry to (source, dest) absolute paths."""
+        if system:
+            return (self.root_path / source_rel, Path(dest_rel))
+        return (self.repo_path / source_rel, self.home_path / dest_rel)
+
+    def elevate_cmd(self):
+        """How to run a privileged command.
+
+        pkexec raises a GUI dialog the desktop's polkit agent draws, which can
+        accept a fingerprint; sudo needs a TTY for its password prompt. Prefer
+        pkexec inside a graphical session, fall back to sudo otherwise.
+        """
+        graphical = os.environ.get("WAYLAND_DISPLAY") or os.environ.get("DISPLAY")
+        if graphical and shutil.which("pkexec"):
+            return ["pkexec"]
+        return ["sudo"]
+
+    def queue_system_install(self, source, dest):
+        """Defer a privileged copy so all of them share one auth prompt."""
+        self.pending_system.append((Path(source), Path(dest)))
+
+    def flush_system_installs(self):
+        """Copy every queued system file in a single elevated batch."""
+        if not self.pending_system:
+            return True
+        if self.dry_run:
+            for src, dest in self.pending_system:
+                self.print_info(f"● Would install (root): {dest}", "info")
+            self.pending_system = []
+            return True
+
+        lines = ["#!/bin/bash", "set -uo pipefail", "rc=0"]
+        for src, dest in self.pending_system:
+            src_q, dest_q = shlex.quote(str(src)), shlex.quote(str(dest))
+            lines += [
+                f'install -d -m 755 "$(dirname {dest_q})" || rc=1',
+                # Back up the live file the first time we ever touch it.
+                f'[ -f {dest_q} ] && [ ! -f {dest_q}.dotfiles-orig ] && cp -a {dest_q} {dest_q}.dotfiles-orig',
+                f'install -o root -g root -m 644 {src_q} {dest_q} || rc=1',
+                f'echo "  installed: {dest}"',
+            ]
+        lines.append("exit $rc")
+
+        script = self.repo_path / ".dotfiles-system-install.sh"
+        script.write_text("\n".join(lines) + "\n", encoding="utf-8")
+        script.chmod(0o755)
+        try:
+            self.print_info("Installing system files (authentication required)...", "info")
+            res = subprocess.run(self.elevate_cmd() + [str(script)])
+            ok = res.returncode == 0
+            if not ok:
+                self.print_info("✗ System install failed or was cancelled", "error")
+            return ok
+        except Exception as e:
+            self.print_info(f"✗ System install error: {e}", "error")
+            return False
+        finally:
+            script.unlink(missing_ok=True)
+            self.pending_system = []
+
+    def export_system(self, source_rel, dest_rel):
+        """EXPORT: copy the live system file into the repo. Dumb copy, live wins."""
+        source, dest = self.paths_for(source_rel, dest_rel, system=True)
+        if not dest.exists():
+            self.print_info(f"✗ Not present on this system: {dest}", "error")
+            return False
+        if self.dry_run:
+            self.print_info(f"● Would export: {dest} → root/{source_rel}", "info")
+            return True
+        try:
+            source.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copyfile(dest, source)
+            self.print_info(f"✓ Exported: {dest} → root/{source_rel}", "success")
+            return True
+        except Exception as e:
+            self.print_info(f"✗ Failed to export {dest}: {e}", "error")
+            return False
+
+    def get_status(self, source_rel, dest_rel, system=False):
         """Get the current status of a dotfile"""
-        source = self.repo_path / source_rel
-        dest = self.home_path / dest_rel
+        source, dest = self.paths_for(source_rel, dest_rel, system)
 
         if not source.exists():
             return "✗ Missing in repo"
+
+        if system:
+            # Copied, not linked: compare contents instead of link targets.
+            if not dest.exists():
+                return "✓ Not installed"
+            try:
+                return "= In sync" if filecmp.cmp(source, dest, shallow=False) else "≠ Differs"
+            except Exception:
+                return "? Unreadable"
 
         if not dest.exists():
             return "✓ Not linked"
@@ -235,8 +336,8 @@ class DotfilesManager:
         """List all dotfiles with their current status"""
         data = []
         dotfiles = get_dotfiles()
-        for source_rel, dest_rel, desc, _labels in dotfiles:
-            status = self.get_status(source_rel, dest_rel)
+        for source_rel, dest_rel, desc, _labels, system in dotfiles:
+            status = self.get_status(source_rel, dest_rel, system)
             data.append((source_rel, dest_rel, status, desc))
 
         self.print_table(data)
@@ -346,7 +447,7 @@ class DotfilesManager:
 
         return backup_path
 
-    def create_symlink(self, source_rel, dest_rel, force=False, yes_to_all=False):
+    def create_symlink(self, source_rel, dest_rel, force=False, yes_to_all=False, system=False):
         """Create a symlink from repo to home directory
 
         Args:
@@ -358,12 +459,17 @@ class DotfilesManager:
         Returns:
             Tuple of (success: bool, apply_to_all: bool)
         """
-        source = self.repo_path / source_rel
-        dest = self.home_path / dest_rel
+        source, dest = self.paths_for(source_rel, dest_rel, system)
 
         # Check if source exists in repo
         if not source.exists():
             self.print_info(f"✗ Source not found: {source}", "error")
+            return (False, yes_to_all)
+
+        if system:
+            # Never reached: system entries are excluded from every link path.
+            # They are copied explicitly via --import-system / --export-system.
+            self.print_info(f"⊘ System entry, use --import-system: {dest_rel}", "warning")
             return (False, yes_to_all)
 
         # Check if destination already exists
@@ -424,12 +530,17 @@ class DotfilesManager:
 
         for idx in selections:
             if 1 <= idx <= len(dotfiles):
-                source_rel, dest_rel, desc = dotfiles[idx - 1]
-                success, yes_to_all = self.create_symlink(source_rel, dest_rel, yes_to_all=yes_to_all)
+                source_rel, dest_rel, desc, _labels, system = dotfiles[idx - 1]
+                if system:
+                    self.print_info(f"⊘ System entry, use --import-system: {dest_rel}", "warning")
+                    continue
+                success, yes_to_all = self.create_symlink(source_rel, dest_rel,
+                                                     yes_to_all=yes_to_all, system=system)
                 if success:
                     success_count += 1
                 print()  # Empty line between items
 
+        self.flush_system_installs()
         self.print_info(f"\n✓ Successfully linked {success_count}/{len(selections)} dotfiles", "success")
         if self.backup_dir.exists():
             self.print_info(f"  Backups saved to: {self.backup_dir.relative_to(self.home_path)}", "info")
@@ -442,12 +553,16 @@ class DotfilesManager:
         success_count = 0
         yes_to_all = False
 
-        for source_rel, dest_rel, desc, _labels in dotfiles:
-            success, yes_to_all = self.create_symlink(source_rel, dest_rel, yes_to_all=yes_to_all)
+        for source_rel, dest_rel, desc, _labels, system in dotfiles:
+            if system:
+                continue  # copied explicitly, never linked
+            success, yes_to_all = self.create_symlink(source_rel, dest_rel,
+                                                     yes_to_all=yes_to_all, system=system)
             if success:
                 success_count += 1
             print()
 
+        self.flush_system_installs()
         self.print_info(f"\n✓ Successfully linked {success_count}/{len(dotfiles)} dotfiles", "success")
         if self.backup_dir.exists():
             self.print_info(f"  Backups saved to: {self.backup_dir.relative_to(self.home_path)}", "info")
@@ -467,11 +582,14 @@ class DotfilesManager:
 
         ok = 0
         yes_to_all = force
-        for source_rel, dest_rel, _desc, _labels in entries:
+        for source_rel, dest_rel, _desc, _labels, system in entries:
+            if system:
+                continue  # copied explicitly, never linked
             success, yes_to_all = self.create_symlink(
-                source_rel, dest_rel, force=force, yes_to_all=yes_to_all)
+                source_rel, dest_rel, force=force, yes_to_all=yes_to_all, system=system)
             if success: ok += 1
 
+        self.flush_system_installs()
         verb = "would link" if self.dry_run else "linked"
         self.print_info("\n%s %d/%d" % (verb.capitalize(), ok, len(entries)),
                         "success" if ok == len(entries) else "warning")
@@ -488,7 +606,15 @@ class DotfilesManager:
         removed = skipped = 0
         yes_to_all = force
 
-        for source_rel, dest_rel, _desc, _labels in get_dotfiles():
+        for source_rel, dest_rel, _desc, _labels, system in get_dotfiles():
+            if system:
+                # Installed copies, not symlinks. Removing an /etc file could
+                # leave the system unbootable or unauthenticatable, so this
+                # never touches them; a .dotfiles-orig backup sits beside each
+                # one for a deliberate manual restore.
+                self.print_info(f"⊘ System file, left alone: {dest_rel}", "info")
+                skipped += 1
+                continue
             dest = self.home_path / dest_rel
             source = self.repo_path / source_rel
 
@@ -822,6 +948,48 @@ def main(args):
             manager.print_info("Labels in manifest.yaml:\n", "info")
             for label in sorted(counts, key=lambda k: (-counts[k], k)):
                 print("  %-12s %d" % (label, counts[label]))
+        return
+
+    if "--export-system" in args or "--import-system" in args:
+        entries = [e for e in manager.select(include, exclude) if e[4]]
+        if not entries:
+            manager.print_info("No system entries matched", "warning")
+            return
+
+        if "--export-system" in args:
+            # System -> repo. Plain copy, no root needed to read 0644 /etc files.
+            manager.print_info(f"\nExporting {len(entries)} system file(s) into root/...\n", "info")
+            ok = sum(manager.export_system(sr, dr) for sr, dr, _d, _l, _s in entries)
+            verb = "would export" if manager.dry_run else "exported"
+            manager.print_info(f"\n✓ {verb} {ok}/{len(entries)} system file(s)", "success")
+            return
+
+        # Repo -> system. Needs root; queue everything so one auth covers it all.
+        manager.print_info(f"\nImporting {len(entries)} system file(s) from root/...\n", "info")
+        queued = 0
+        for source_rel, dest_rel, _desc, _labels, _sys in entries:
+            source, dest = manager.paths_for(source_rel, dest_rel, system=True)
+            if not source.exists():
+                manager.print_info(f"✗ Missing in repo: root/{source_rel}", "error")
+                continue
+            if dest.exists():
+                try:
+                    if filecmp.cmp(source, dest, shallow=False):
+                        manager.print_info(f"= Already in sync: {dest}", "info")
+                        continue
+                except Exception:
+                    pass
+                if not assume_yes and not manager.dry_run:
+                    manager.print_info(f"⚠ Differs: {dest}", "warning")
+                    if not manager.confirm("  Overwrite it (a .dotfiles-orig backup is kept)?", default=False):
+                        manager.print_info(f"⊘ Skipped: {dest}", "warning")
+                        continue
+            manager.queue_system_install(source, dest)
+            queued += 1
+        if queued:
+            manager.flush_system_installs()
+        verb = "would import" if manager.dry_run else "imported"
+        manager.print_info(f"\n✓ {verb} {queued}/{len(entries)} system file(s)", "success")
         return
 
     if "--unlink" in args or "-u" in args:

@@ -61,6 +61,22 @@ dotfiles:
     description: Render text in Omarchy's logo font (Delta Corps Priest 1)
     labels: [tools, omarchy, current]
 
+  # System files: copied to absolute paths as root, never symlinked. PAM files
+  # must stay root-owned -- a symlink into this user-writable repo would let an
+  # unprivileged user rewrite their own auth rules. Apply with --label system,
+  # refresh from the live system with --pull-system.
+  - source: etc/pam.d/sudo
+    dest: /etc/pam.d/sudo
+    description: sudo PAM - fingerprint enabled with lid closed, 10s TTY timeout
+    labels: [system, security, omarchy, current]
+    system: true
+
+  - source: etc/pam.d/polkit-1
+    dest: /etc/pam.d/polkit-1
+    description: polkit PAM - fingerprint races the password field, no timeout
+    labels: [system, security, omarchy, current]
+    system: true
+
   - source: .local/bin/comrade
     dest: .local/bin/comrade
     description: Offline assistant - local model + context profiles, no tools
