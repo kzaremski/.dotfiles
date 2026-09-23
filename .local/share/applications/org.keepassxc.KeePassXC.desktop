@@ -60,7 +60,7 @@ Comment[ru]=Разработанный сообществом порт Windows-�
 # Note the clipboard is bridged between Wayland and XWayland either way, so
 # KeePassXC's clipboard-clear timeout matters regardless of backend.
 # --------------------------------------------------------------------------
-Exec=/home/kzaremski/.local/bin/keepassxc-scaled %f
+Exec=keepassxc-scaled %f
 TryExec=keepassxc
 Icon=keepassxc
 StartupWMClass=keepassxc

@@ -13,7 +13,7 @@ Path=/opt/resolve/
 #   ~/.local/share/DaVinciResolve/configs/config.user.xml
 # currently 200. Change it in-app via Preferences > User > UI Settings, or
 # edit that file while Resolve is CLOSED (it rewrites the file on exit).
-Exec=/home/kzaremski/.local/bin/resolve-scaled %u
+Exec=resolve-scaled %u
 Terminal=false
 MimeType=application/x-resolveproj;
 Icon=davinci-resolve
