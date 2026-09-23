@@ -269,6 +269,11 @@ dotfiles:
     description: Alacritty terminal config
     labels: [terminal, omarchy, current]
 
+  - source: .config/foot
+    dest: .config/foot
+    description: Foot terminal config (the one actually used on Omarchy)
+    labels: [terminal, omarchy, wayland, current]
+
   - source: .config/kitty
     dest: .config/kitty
     description: Kitty terminal config
