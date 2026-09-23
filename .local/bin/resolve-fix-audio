@@ -1,0 +1,37 @@
+#!/bin/bash
+# Replace AAC audio with PCM in place, leaving the video stream untouched.
+#
+# Resolve on Linux cannot decode AAC in ANY edition. Video is stream-copied, so
+# this is lossless and takes ~0.1s per clip. Gyro/telemetry data streams are
+# preserved; only the MJPEG thumbnail is dropped.
+#
+# Safety: writes to a temp file, verifies the video stream hash matches the
+# original BEFORE replacing anything. A clip that fails verification is left
+# untouched and reported.
+set -uo pipefail
+DIR="${1:?usage: resolve-fix-audio <dir of clips>}"
+ok=0; skip=0; fail=0
+
+for f in "$DIR"/*.MP4 "$DIR"/*.mov "$DIR"/*.MOV; do
+  [ -f "$f" ] || continue
+  # Already PCM? nothing to do.
+  if ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$f" 2>/dev/null | grep -q '^pcm'; then
+    echo "  skip (already PCM): $(basename "$f")"; skip=$((skip+1)); continue
+  fi
+  before=$(ffmpeg -nostdin -v error -i "$f" -map 0:v:0 -c copy -f md5 - 2>/dev/null)
+  tmp="$f.remux.tmp"
+  if ! ffmpeg -nostdin -v error -y -i "$f" -map 0 -c copy -c:a pcm_s16le -f mov "$tmp" 2>/dev/null; then
+    echo "  FAIL (encode): $(basename "$f")"; rm -f "$tmp"; fail=$((fail+1)); continue
+  fi
+  after=$(ffmpeg -nostdin -v error -i "$tmp" -map 0:v:0 -c copy -f md5 - 2>/dev/null)
+  if [ -n "$before" ] && [ "$before" = "$after" ]; then
+    touch -r "$f" "$tmp"          # preserve mtime; Resolve and you both read these
+    mv -f "$tmp" "$f"
+    echo "  ok: $(basename "$f")"; ok=$((ok+1))
+  else
+    echo "  FAIL (video hash mismatch, original untouched): $(basename "$f")"
+    rm -f "$tmp"; fail=$((fail+1))
+  fi
+done
+echo
+echo "  converted=$ok  already-pcm=$skip  failed=$fail"

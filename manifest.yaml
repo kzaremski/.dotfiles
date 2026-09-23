@@ -92,6 +92,16 @@ dotfiles:
     description: comrade context profiles (machine, Omarchy Hyprland Lua API)
     labels: [tools, omarchy, current]
 
+  - source: .local/bin/resolve-fix-audio
+    dest: .local/bin/resolve-fix-audio
+    description: Remux AAC to PCM in place so Resolve on Linux can read the audio
+    labels: [tools, omarchy, current]
+
+  - source: .local/bin/resolve-perms
+    dest: .local/bin/resolve-perms
+    description: Re-own Resolve's user-content dirs after a package upgrade (run via pkexec)
+    labels: [tools, omarchy, current]
+
   - source: .local/bin/resolve-scaled
     dest: .local/bin/resolve-scaled
     description: Launch DaVinci Resolve with DisplayScale matching the focused monitor

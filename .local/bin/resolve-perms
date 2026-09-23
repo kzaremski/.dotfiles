@@ -1,0 +1,30 @@
+#!/bin/bash
+# Hand DaVinci Resolve's user-content directories to the desktop user.
+#
+# The AUR package ships everything under /opt/resolve as root:root 755, but
+# Resolve runs as you and needs to write to several of them:
+#
+#   .license  activation state. Unwritable => activation succeeds over the
+#             network then fails to save, surfacing as the very misleading
+#             "Cannot validate license key, please try again later".
+#   Extras    DLC/package downloads (the "invalid chunk file" log warnings).
+#   LUT       where Resolve's LUT browser reads from; needed to add your own.
+#   Fusion/LUTs   same, for Fusion.
+#
+# pacman resets ownership on every Resolve upgrade -- re-run this afterwards.
+set -uo pipefail
+owner="${1:?usage: resolve-perms.sh <user>}"
+dirs=(
+  /opt/resolve/.license
+  /opt/resolve/Extras
+  /opt/resolve/LUT
+  /opt/resolve/Fusion/LUTs
+)
+for d in "${dirs[@]}"; do
+  if [ -d "$d" ]; then
+    chown -R "$owner":"$owner" "$d" && chmod -R u+rwX "$d"
+    printf "  %-28s %s\n" "$d" "$(stat -c '%U:%G %a' "$d")"
+  else
+    printf "  %-28s missing, skipped\n" "$d"
+  fi
+done

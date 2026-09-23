@@ -19,7 +19,13 @@ Video played back fine; only audio was missing, exactly as the licensing implies
 
 Fixes:
 - Video: install Studio (`davinci-resolve-studio` AUR, needs the Studio zip).
-- Audio: remux AAC -> PCM. Lossless and ~0.1s per clip, video stream-copied:
+- Audio: remux AAC -> PCM. Lossless and ~0.1s per clip, video stream-copied.
+
+      resolve-fix-audio <dir of clips>        # in ~/.local/bin, from dotfiles
+
+  It verifies each file's video stream hash matches the original BEFORE
+  replacing it, keeps filenames (so no relink), and skips files already PCM.
+  The underlying call is:
 
       ffmpeg -i in.MP4 -map 0 -c copy -c:a pcm_s16le -f mov out.MP4
 
@@ -39,9 +45,22 @@ Resolve stores activation in `/opt/resolve/.license/`, which the AUR package shi
 to persist, and reports the above. Same for `/opt/resolve/Extras` (the "invalid
 chunk file" DDM warnings).
 
-    sudo chown -R "$USER":"$USER" /opt/resolve/.license /opt/resolve/Extras
+    pkexec resolve-perms "$USER"            # in ~/.local/bin, from dotfiles
 
-pacman resets this on every Resolve upgrade -- reapply after upgrading.
+That script re-owns every directory Resolve needs to write:
+
+    /opt/resolve/.license      activation state (the error above)
+    /opt/resolve/Extras        DLC downloads ("invalid chunk file" warnings)
+    /opt/resolve/LUT           where the LUT browser reads -- needed to add your own
+    /opt/resolve/Fusion/LUTs   same, for Fusion
+
+**pacman resets ownership on every Resolve upgrade** -- re-run it afterwards.
+Resolve creates .license world-writable (umask 000); 755 is enough and keeps
+other local users out of activation state.
+
+Note `~/.local/share/DaVinciResolve/.LUT` is Resolve's processed cache, not the
+place to drop your own LUTs -- it renames `.ilut` to `_ilut` and generates .png
+thumbnails. Use /opt/resolve/LUT.
 
 ## "Resolve won't launch" -- exits 0, no window, no log lines
 
