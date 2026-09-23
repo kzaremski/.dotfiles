@@ -76,6 +76,11 @@ dotfiles:
     description: comrade context profiles (machine, Omarchy Hyprland Lua API)
     labels: [tools, omarchy, current]
 
+  - source: .local/bin/resolve-scaled
+    dest: .local/bin/resolve-scaled
+    description: Launch DaVinci Resolve with DisplayScale matching the focused monitor
+    labels: [tools, omarchy, wayland, current]
+
   - source: .local/bin/keepassxc-scaled
     dest: .local/bin/keepassxc-scaled
     description: Launch KeePassXC on XWayland at the focused monitor's scale
@@ -105,7 +110,7 @@ dotfiles:
 
   - source: .local/share/applications/DaVinciResolve.desktop
     dest: .local/share/applications/DaVinciResolve.desktop
-    description: DaVinci Resolve launcher (scaling via its own DisplayScale)
+    description: DaVinci Resolve launcher via resolve-scaled (per-monitor DisplayScale)
     labels: [apps, omarchy, current]
 
   # ---- macOS ---------------------------------------------------------------
