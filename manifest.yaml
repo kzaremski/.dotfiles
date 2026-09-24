@@ -114,6 +114,11 @@ dotfiles:
     description: Save/restore the explicit package lists in packages/
     labels: [tools, common, current]
 
+  - source: .local/bin/resolve-unstick
+    dest: .local/bin/resolve-unstick
+    description: Kill a wedged Resolve and clear its Qt single-instance locks
+    labels: [tools, omarchy, current]
+
   - source: .local/bin/resolve-perms
     dest: .local/bin/resolve-perms
     description: Re-own Resolve's user-content dirs after a package upgrade (run via pkexec)

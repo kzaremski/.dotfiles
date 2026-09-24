@@ -55,8 +55,13 @@ That script re-owns every directory Resolve needs to write:
     /opt/resolve/Fusion/LUTs   same, for Fusion
 
 **pacman resets ownership on every Resolve upgrade** -- re-run it afterwards.
-Resolve creates .license world-writable (umask 000); 755 is enough and keeps
-other local users out of activation state.
+
+**`.license` must be 0777, not 755.** It holds an RLM licence-manager tree
+(`Do-NOT-Touch-Anything-in-This-RLM-Directory`), Resolve creates it world-
+writable itself, and the Arch/AUR community documents 777 as required.
+Tightening it "for neatness" makes Resolve **re-prompt for the licence key on
+every start** -- activation stops persisting, with `LeManager ERROR 24, 291`
+and `22, 334, -4` in the log. This was done once and cost an evening.
 
 Note `~/.local/share/DaVinciResolve/.LUT` is Resolve's processed cache, not the
 place to drop your own LUTs -- it renames `.ilut` to `_ilut` and generates .png
@@ -95,6 +100,16 @@ unimplemented. Window rules cannot help: they act on focus, the grab is below th
 Do NOT apply the widely-circulated `stayfocused` rule -- it pins focus to the
 popup, which *causes* this symptom. It's the fix for the opposite problem (popups
 vanishing on pointer-leave). Workaround: dismiss dialogs before clicking away.
+
+## "Asks for the licence key on every start"
+
+Not a licensing problem -- a permissions one. See the `.license` 0777 note
+above. `pkexec resolve-perms "$USER"` restores it.
+
+## "Won't launch" -- use the command
+
+    resolve-unstick        kill a wedged instance + clear its Qt locks
+    resolve-unstick -l     ...and relaunch
 
 ## Dead ends (already checked -- don't repeat)
 

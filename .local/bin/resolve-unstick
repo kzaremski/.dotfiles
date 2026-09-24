@@ -1,0 +1,57 @@
+#!/bin/bash
+# Clear a wedged DaVinci Resolve, optionally relaunching it.
+#
+#   resolve-unstick        kill the wedged instance and clear its locks
+#   resolve-unstick -l     ...then relaunch via resolve-scaled
+#
+# Why this is needed: Resolve uses a Qt single-instance lock. If an instance is
+# alive but wedged (no window -- typically stuck on a licence or crash dialog),
+# every new launch finds the lock, hands off to the dead instance and exits 0
+# silently. It looks exactly like "Resolve won't start": no window, no error,
+# nothing in the log.
+#
+# Note: `pgrep -x resolve` finds NOTHING even when it is running, because the
+# process's comm is "GUI Thread". Match on the exe symlink instead.
+set -uo pipefail
+
+launch=0
+[ "${1:-}" = "-l" ] || [ "${1:-}" = "--launch" ] && launch=1
+
+pids=()
+for p in /proc/[0-9]*; do
+  case "$(readlink -f "$p/exe" 2>/dev/null)" in
+    /opt/resolve/bin/*) pids+=("$(basename "$p")") ;;
+  esac
+done
+
+if [ ${#pids[@]} -eq 0 ]; then
+  echo "  no Resolve process running"
+else
+  for pid in "${pids[@]}"; do
+    age=$(ps -o etime= -p "$pid" 2>/dev/null | tr -d ' ')
+    echo "  stopping pid $pid (up $age)"
+    kill -TERM "$pid" 2>/dev/null
+  done
+  for _ in $(seq 1 15); do
+    still=0
+    for pid in "${pids[@]}"; do kill -0 "$pid" 2>/dev/null && still=1; done
+    [ $still -eq 0 ] && break
+    sleep 1
+  done
+  for pid in "${pids[@]}"; do
+    if kill -0 "$pid" 2>/dev/null; then
+      echo "  pid $pid ignored TERM, sending KILL"
+      kill -9 "$pid" 2>/dev/null
+      sleep 1
+    fi
+  done
+fi
+
+# Stale sockets/lockfiles keep the handoff broken even once the process is gone.
+rm -f /tmp/qtsingleapp-DaVinc-* 2>/dev/null && echo "  cleared Qt single-instance locks"
+
+if [ $launch -eq 1 ]; then
+  echo "  relaunching..."
+  setsid "$HOME/.local/bin/resolve-scaled" >/dev/null 2>&1 &
+  echo "  launched"
+fi

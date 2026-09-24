@@ -2,25 +2,27 @@
 # Hand DaVinci Resolve's user-content directories to the desktop user.
 #
 # The AUR package ships everything under /opt/resolve as root:root 755, but
-# Resolve runs as you and needs to write to several of them:
+# Resolve runs as you and must write to several of them:
 #
 #   .license  activation state. Unwritable => activation succeeds over the
-#             network then fails to save, surfacing as the very misleading
+#             network then fails to save, surfacing as the misleading
 #             "Cannot validate license key, please try again later".
 #   Extras    DLC/package downloads (the "invalid chunk file" log warnings).
-#   LUT       where Resolve's LUT browser reads from; needed to add your own.
+#   LUT       where Resolve's LUT browser reads -- needed to add your own.
 #   Fusion/LUTs   same, for Fusion.
+#
+# .license gets 0777, NOT owner-only. It holds an RLM licence-manager tree
+# (Do-NOT-Touch-Anything-in-This-RLM-Directory), Resolve creates it world-
+# writable itself, and the Arch/AUR community documents 777 as required.
+# Tightening it to 755/644 "for neatness" makes Resolve re-prompt for the
+# licence key on EVERY start -- the activation no longer persists. Do not.
 #
 # pacman resets ownership on every Resolve upgrade -- re-run this afterwards.
 set -uo pipefail
-owner="${1:?usage: resolve-perms.sh <user>}"
-dirs=(
-  /opt/resolve/.license
-  /opt/resolve/Extras
-  /opt/resolve/LUT
-  /opt/resolve/Fusion/LUTs
-)
-for d in "${dirs[@]}"; do
+owner="${1:?usage: resolve-perms <user>}"
+
+# Owner-writable is enough for these.
+for d in /opt/resolve/Extras /opt/resolve/LUT /opt/resolve/Fusion/LUTs; do
   if [ -d "$d" ]; then
     chown -R "$owner":"$owner" "$d" && chmod -R u+rwX "$d"
     printf "  %-28s %s\n" "$d" "$(stat -c '%U:%G %a' "$d")"
@@ -28,3 +30,13 @@ for d in "${dirs[@]}"; do
     printf "  %-28s missing, skipped\n" "$d"
   fi
 done
+
+# RLM needs 0777. See the note above before changing this.
+if [ -d /opt/resolve/.license ]; then
+  chown -R "$owner":"$owner" /opt/resolve/.license
+  chmod -R 777 /opt/resolve/.license
+  printf "  %-28s %s  (0777 required by RLM)\n" "/opt/resolve/.license" \
+    "$(stat -c '%U:%G %a' /opt/resolve/.license)"
+else
+  printf "  %-28s missing -- create it before activating\n" "/opt/resolve/.license"
+fi
