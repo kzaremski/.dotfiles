@@ -87,3 +87,20 @@ $RECYCLE.BIN/
 *.bak
 *.bak[0-9]
 *.bak.*
+
+# Credentials. THIS REPO IS PUBLIC -- these must never land in it, even if a
+# future manifest entry or a stray `git add -A` tries. Targeted at the private
+# bits rather than whole directories, since gpg-agent.conf is legitimately
+# tracked and root/etc may hold certificates one day.
+.config/onedrive/refresh_token
+.config/onedrive/.config.*
+.config/onedrive/items.sqlite3*
+**/refresh_token
+**/*.kdbx
+.ssh/
+.gnupg/private-keys-v1.d/
+.gnupg/*.kbx
+.gnupg/*.gpg
+.config/rclone/rclone.conf
+.netrc
+.pgpass
