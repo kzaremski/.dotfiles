@@ -286,9 +286,12 @@ dotfiles:
     description: Alacritty terminal config
     labels: [terminal, omarchy, current]
 
-  - source: .config/systemd/user
-    dest: .config/systemd/user
-    description: User services (ollama with the iGPU + context overrides)
+  # Track the unit FILE only, never the directory: systemd writes its own
+  # enable-symlinks into .wants/ subdirectories there, and replacing the
+  # directory with a symlink silently disables every enabled unit.
+  - source: .config/systemd/user/ollama.service
+    dest: .config/systemd/user/ollama.service
+    description: ollama user service (iGPU enable + 32K context)
     labels: [tools, omarchy, current]
 
   - source: .config/foot
