@@ -41,14 +41,26 @@ BarWidget {
     for (var i = 0; i < values.length; i++) {
       var ws = values[i]
       var id = ws.id
-      if (id <= 0 || id > 10) continue
+      if (id <= 0) continue
 
-      // Keep the focused one even when empty, so the bar never goes blank and
-      // scrolling always has a current position to move from.
-      if (laptopMode && id !== focusedId) {
-        var tl = ws.toplevels
-        if (!tl || tl.values.length === 0) continue
-      }
+      var tl = ws.toplevels
+      var occupied = tl && tl.values.length > 0
+      var isFocused = (id === focusedId)
+
+      // Above 1-10 there is NO keybinding (bindings/tiling.lua only generates
+      // SUPER+1..0) and nothing to scroll to, so an occupied workspace 11 would
+      // be invisible AND unreachable -- the window is simply lost. Show it
+      // whenever it holds something. Empty strays above 10 stay hidden.
+      if (id > 10 && !occupied && !isFocused) continue
+
+      // Laptop mode: the pinned 1-5 / 6-10 rules in hypr/monitors.lua are
+      // persistent, and Hyprland creates those workspaces even when the monitor
+      // their rule names is absent, falling them back onto whatever output
+      // exists. Undocked that would be ten mostly-empty slots. Docked, the
+      // pinning is the point and every slot stays. The focused one is kept even
+      // when empty so the bar never goes blank and scrolling has a position to
+      // move from.
+      if (laptopMode && !occupied && !isFocused) continue
 
       // Only workspaces living on this monitor. Hyprland moves a workspace
       // between monitors as you focus it, and this list re-evaluates because

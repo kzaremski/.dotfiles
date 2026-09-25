@@ -89,6 +89,28 @@ A string dispatcher is auto-wrapped in `hl.dsp.exec_cmd`.
 `transform = 3` is 270 degrees clockwise (equivalently 90 counter-clockwise).
 That is the value this machine's built-in panel needs.
 
+## TRAP: persistent workspace rules claim numbers even when the monitor is absent
+
+`persistent = true` creates the workspace **even when the monitor its rule names
+is not attached** -- known upstream behaviour (hyprwm/Hyprland#11758, #9947;
+Waybar hits it too, Alexays/Waybar#3110).
+
+Consequence here: pinning 1-5 and 6-10 to the two dock monitors by `desc:` meant
+that undocked, all ten numbers were claimed by monitors that did not exist. The
+built-in panel had no workspace rule of its own, so Hyprland allocated it the
+first unclaimed number and **every undocked boot landed on workspace 11.**
+
+That is worse than cosmetic: `bindings/tiling.lua` only generates SUPER+1..0, so
+anything above 10 has **no keybinding, no bar entry and nothing to scroll to** --
+a window opened there is invisible and unreachable.
+
+Fix: gate the pinning block on the dock's EDID (`VE248`), the same way the panel
+rule is gated on `YHB03P24`. Undocked the block is skipped, 1-10 stay unclaimed,
+and the panel boots onto 1 like a normal single-monitor setup.
+
+Limitation: evaluated at config load, so docking mid-session needs a
+`hyprctl reload` before pinning applies.
+
 ## Hard-won gotchas on this machine (Hyprland 0.56.2)
 
 - **Never add a catch-all `hl.monitor({ output = "" })` rule.** On hotplug it is

@@ -95,6 +95,35 @@ hl.monitor({
 local dock_left = "desc:Ancor Communications Inc VE248 F4LMQS087738"
 local dock_right = "desc:Ancor Communications Inc VE248 HCLMQS071226"
 
+-- Only pin when the dock is actually attached.
+--
+-- persistent = true creates the workspace even when the monitor its rule names
+-- is absent -- known Hyprland behaviour (hyprwm/Hyprland#11758, #9947; Waybar
+-- hits it too, Alexays/Waybar#3110). Undocked, these rules therefore claimed
+-- 1-10 for monitors that do not exist, leaving the built-in panel with no
+-- workspace of its own: Hyprland allocated it the first unclaimed number and
+-- every undocked boot landed on workspace 11. Anything above 10 is unreachable
+-- (bindings/tiling.lua only generates SUPER+1..0), so windows opened there were
+-- effectively lost.
+--
+-- Gated on the VE248 EDID the same way the panel rule is gated on YHB03P24.
+-- Undocked this block is skipped entirely, 1-10 stay unclaimed, and the panel
+-- boots onto workspace 1 like any normal single-monitor setup.
+--
+-- Limitation: evaluated at config load. Docking mid-session does not re-run it,
+-- so pinning only applies from the next `hyprctl reload` (or next login).
+local function dock_present()
+  local cmd = [[for d in /sys/class/drm/card*-*; do ]]
+    .. [[if grep -qa 'VE248' "$d/edid" 2>/dev/null; then echo yes; break; fi; done]]
+  local handle = io.popen(cmd)
+  if not handle then return false end
+  local out = handle:read("*a") or ""
+  handle:close()
+  return out:match("yes") ~= nil
+end
+
+if dock_present() then
+
 for ws = 1, 5 do
   hl.workspace_rule({
     workspace = tostring(ws),
@@ -112,3 +141,5 @@ for ws = 6, 10 do
     default = ws == 6,
   })
 end
+
+end -- dock_present()
