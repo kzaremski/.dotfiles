@@ -33,3 +33,15 @@
 -- defined in ~/.config/omarchy/extensions/omarchy-menu.jsonc.
 -- SUPER+CTRL+U because S/E and most other CTRL combos are already bound.
 o.bind("SUPER + CTRL + U", "Symbols", "omarchy-menu summon trigger.symbols")
+
+-- Reload the Hyprland config without logging out.
+--
+-- Needed in particular after docking: monitors.lua gates the workspace pinning
+-- on the dock's EDID, and that gate is only evaluated at config load. Plug the
+-- dock in, hit this, and workspaces 1-5 / 6-10 pin to the two VE248s.
+-- Also re-reads scale/transform, bindings, window rules and look-and-feel.
+o.bind(
+  "SUPER + SHIFT + R",
+  "Reload Hyprland config",
+  "sh -c 'hyprctl reload && " .. o.notify("Hyprland config reloaded") .. "'"
+)
