@@ -113,8 +113,8 @@
   // /boot are never offered.
   // Both run in a floating terminal because gum needs a TTY.
   "trigger.utilities.drives": {"icon":"\udb80\udeca","label":"Drives","aliases":["disk","disks","drive","mount","usb"],"description":"Mount and unmount external disks"},
-  "trigger.utilities.drives.mount": {"icon":"\udb81\udd3a","label":"Mount a drive","aliases":["mount"],"description":"Pick an unmounted partition and mount it","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-mount'\""},
-  "trigger.utilities.drives.unmount": {"icon":"\udb81\udd3b","label":"Unmount a drive","aliases":["unmount","eject","umount"],"description":"Safely unmount a removable filesystem","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-unmount'\""},
+  "trigger.utilities.drives.mount": {"icon":"\uf067","label":"Mount a drive","aliases":["mount"],"description":"Pick an unmounted partition and mount it","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-mount'\""},
+  "trigger.utilities.drives.unmount": {"icon":"\uf068","label":"Unmount a drive","aliases":["unmount","eject","umount"],"description":"Safely unmount a removable filesystem","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-unmount'\""},
   "trigger.utilities.drives.list": {"icon":"\uf0a0","label":"List drives","aliases":["lsblk","blocks"],"description":"Show all block devices and mountpoints","action":"omarchy-launch-or-focus-tui \"bash -c 'lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT; read -rsn1 -p \\\"Press any key...\\\"'\""},
 
   // Share this machine's internet with another adapter. NetworkManager's
