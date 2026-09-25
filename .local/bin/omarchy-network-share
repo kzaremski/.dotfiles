@@ -1,0 +1,131 @@
+#!/bin/bash
+# Share this machine's internet connection with another network adapter.
+#
+# NetworkManager's `ipv4.method shared` does the whole job: assigns an address,
+# runs dnsmasq for DHCP and DNS, enables forwarding and installs the NAT rules.
+# It NATs out whatever currently holds the default route, so the "source" is
+# chosen for you -- you only pick what to share TO.
+#
+# Sharing to a wired port and sharing to Wi-Fi are different operations:
+# wired uses a shared-method connection, Wi-Fi puts the radio into AP mode.
+# A single Wi-Fi radio cannot be client and AP at once, so you cannot share
+# Wi-Fi to Wi-Fi.
+set -uo pipefail
+
+PREFIX="omarchy-share"
+
+die() { gum style --foreground 1 "  $*"; exit 1; }
+note() { gum style --foreground 4 "  $*"; }
+
+uplink() { ip route show default 2>/dev/null | awk '/^default/{print $5; exit}'; }
+
+active_shares() {
+  nmcli -t -f NAME,DEVICE con show --active 2>/dev/null \
+    | awk -F: -v p="$PREFIX" '$1 ~ "^"p || $1=="Hotspot" {print $1"\t"$2}'
+}
+
+status() {
+  local up; up=$(uplink)
+  gum style --bold "  Network sharing"
+  echo "    uplink (source): ${up:-none — no default route}"
+  local rows; rows=$(active_shares)
+  if [ -n "$rows" ]; then
+    echo "    active shares:"
+    printf '%s\n' "$rows" | while IFS=$'\t' read -r n d; do
+      echo "      $n on ${d:-?}   $(ip -4 -br addr show "$d" 2>/dev/null | awk '{print $3}')"
+    done
+  else
+    echo "    active shares: none"
+  fi
+}
+
+# Candidate targets: anything that is not the uplink, not loopback, not a tunnel.
+targets() {
+  local up; up=$(uplink)
+  nmcli -t -f DEVICE,TYPE,STATE device 2>/dev/null | awk -F: -v up="$up" '
+    $2!="loopback" && $2!="tun" && $2!="wifi-p2p" && $1!=up {
+      printf "%s\t%s\t%s\n", $1, $2, $3 }'
+}
+
+share_wired() {
+  local dev="$1" con="$PREFIX-$1"
+  nmcli con delete "$con" >/dev/null 2>&1
+  nmcli con add type ethernet ifname "$dev" con-name "$con" \
+        ipv4.method shared ipv6.method ignore >/dev/null \
+    || die "could not create the shared connection on $dev"
+  nmcli con up "$con" >/dev/null || die "could not bring up $con"
+  allow_firewall "$dev"
+  note "Sharing ${2:-internet} to $dev"
+  ip -4 -br addr show "$dev" | sed 's/^/    /'
+}
+
+share_wifi() {
+  local dev="$1" ssid pass
+  ssid=$(gum input --header "Hotspot name (SSID)" --value "pocket" --width 40) || exit 0
+  [ -n "$ssid" ] || die "no SSID given"
+  pass=$(gum input --password --header "Password (8+ characters)" --width 40) || exit 0
+  [ ${#pass} -ge 8 ] || die "password must be at least 8 characters"
+  nmcli dev wifi hotspot ifname "$dev" ssid "$ssid" password "$pass" >/dev/null \
+    || die "could not start the hotspot (is the radio already a client?)"
+  allow_firewall "$dev"
+  note "Hotspot '$ssid' up on $dev"
+  ip -4 -br addr show "$dev" | sed 's/^/    /'
+}
+
+# UFW defaults to DROP inbound, which eats the clients' DHCP and DNS.
+allow_firewall() {
+  command -v ufw >/dev/null || return 0
+  pkexec /usr/bin/ufw allow in on "$1" >/dev/null 2>&1 \
+    && note "ufw: allowed inbound on $1" \
+    || note "ufw: could not add rule (clients may not get DHCP)"
+}
+
+stop_sharing() {
+  local rows; rows=$(active_shares)
+  [ -n "$rows" ] || { note "nothing is being shared"; return; }
+  printf '%s\n' "$rows" | while IFS=$'\t' read -r n d; do
+    nmcli con down "$n" >/dev/null 2>&1
+    [[ $n == "$PREFIX"* ]] && nmcli con delete "$n" >/dev/null 2>&1
+    command -v ufw >/dev/null && [ -n "$d" ] && \
+      pkexec /usr/bin/ufw delete allow in on "$d" >/dev/null 2>&1
+    note "stopped $n${d:+ on $d}"
+  done
+}
+
+main() {
+  command -v gum >/dev/null || die "gum is required"
+  local up; up=$(uplink)
+
+  local choice
+  choice=$(printf '%s\n' \
+    "Share to an adapter" "Stop sharing" "Status" \
+    | gum choose --header "Network sharing   (uplink: ${up:-none})") || exit 0
+
+  case "$choice" in
+    Status) status ;;
+    "Stop sharing") stop_sharing ;;
+    "Share to an adapter")
+      [ -n "$up" ] || die "no default route -- nothing to share"
+      local rows; rows=$(targets)
+      [ -n "$rows" ] || die "no adapters available to share to"
+      local pick dev type
+      pick=$(printf '%s\n' "$rows" | awk -F'\t' '{printf "%s  (%s, %s)\n",$1,$2,$3}' \
+        | gum choose --header "Share $up to which adapter?") || exit 0
+      dev=${pick%% *}
+      type=$(printf '%s\n' "$rows" | awk -F'\t' -v d="$dev" '$1==d{print $2}')
+      case "$type" in
+        wifi)     share_wifi "$dev" ;;
+        ethernet) share_wired "$dev" "$up" ;;
+        *)        share_wired "$dev" "$up" ;;
+      esac
+      ;;
+  esac
+  echo
+  read -rsn1 -p "  Press any key..."
+}
+
+case "${1:-}" in
+  status) status ;;
+  stop)   stop_sharing ;;
+  *)      main ;;
+esac

@@ -144,6 +144,11 @@ dotfiles:
     description: Figlet font used by omarchy-ascii
     labels: [fonts, omarchy, current]
 
+  - source: .local/bin/omarchy-network-share
+    dest: .local/bin/omarchy-network-share
+    description: Share the internet connection with another adapter (wired or hotspot)
+    labels: [tools, omarchy, current]
+
   - source: .local/bin/omarchy-drive-mount
     dest: .local/bin/omarchy-drive-mount
     description: Menu-driven disk mounting (udisksctl, apfs-fuse for APFS)

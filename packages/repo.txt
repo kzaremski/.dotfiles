@@ -7,6 +7,7 @@ base
 base-devel
 bash-completion
 bat
+blueman
 bluez
 bluez-tools
 bluez-utils
@@ -25,6 +26,7 @@ cups
 cups-filters
 cups-pk-helper
 ddcutil
+dnsmasq
 docker
 docker-buildx
 docker-compose
@@ -73,6 +75,7 @@ imv
 inetutils
 inkscape
 inotify-tools
+inter-font
 inxi
 jq
 jre-openjdk
@@ -184,6 +187,12 @@ tailscale
 tensaku
 tesseract
 tesseract-data-eng
+texlive-basic
+texlive-binextra
+texlive-fontsrecommended
+texlive-latex
+texlive-latexextra
+texlive-latexrecommended
 tldr
 tmux
 tobi-try

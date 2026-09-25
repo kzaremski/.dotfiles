@@ -104,14 +104,28 @@
   "trigger.symbols.warning": {"icon":"⚠","label":"Warning","action":"omarchy-menu-emoji-insert '⚠'","description":"⚠  caution alert danger attention"},
   "trigger.symbols.recycling": {"icon":"♻","label":"Recycling","action":"omarchy-menu-emoji-insert '♻'","description":"♻  recycle reuse environment green"},
   // ---- Drives ---------------------------------------------------------
+  // Utilities submenu: things that are occasionally useful rather than daily.
+  "trigger.utilities": {"icon":"\udb80\udf3e","label":"Utilities","aliases":["utils","tools"],"description":"Disks, network sharing and other occasional tools"},
+
   // Mount/unmount external disks. Non-APFS goes through udisksctl (no root,
   // lands in /run/media); APFS needs apfs-fuse under pkexec since there is no
   // kernel driver, and is always mounted READ-ONLY. The disks holding / and
   // /boot are never offered.
   // Both run in a floating terminal because gum needs a TTY.
-  "drives": {"icon":"\udb80\udeca","label":"Drives","aliases":["disk","disks","drive","mount","usb"],"description":"Mount and unmount external disks"},
-  "drives.mount": {"icon":"\udb81\udd3a","label":"Mount a drive","aliases":["mount"],"description":"Pick an unmounted partition and mount it","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-mount'\""},
-  "drives.unmount": {"icon":"\udb81\udd3b","label":"Unmount a drive","aliases":["unmount","eject","umount"],"description":"Safely unmount a removable filesystem","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-unmount'\""},
-  "drives.list": {"icon":"\uf0a0","label":"List drives","aliases":["lsblk","blocks"],"description":"Show all block devices and mountpoints","action":"omarchy-launch-or-focus-tui \"bash -c 'lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT; read -rsn1 -p \\\"Press any key...\\\"'\""},
+  "trigger.utilities.drives": {"icon":"\udb80\udeca","label":"Drives","aliases":["disk","disks","drive","mount","usb"],"description":"Mount and unmount external disks"},
+  "trigger.utilities.drives.mount": {"icon":"\udb81\udd3a","label":"Mount a drive","aliases":["mount"],"description":"Pick an unmounted partition and mount it","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-mount'\""},
+  "trigger.utilities.drives.unmount": {"icon":"\udb81\udd3b","label":"Unmount a drive","aliases":["unmount","eject","umount"],"description":"Safely unmount a removable filesystem","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-drive-unmount'\""},
+  "trigger.utilities.drives.list": {"icon":"\uf0a0","label":"List drives","aliases":["lsblk","blocks"],"description":"Show all block devices and mountpoints","action":"omarchy-launch-or-focus-tui \"bash -c 'lsblk -o NAME,SIZE,FSTYPE,LABEL,MOUNTPOINT; read -rsn1 -p \\\"Press any key...\\\"'\""},
+
+  // Share this machine's internet with another adapter. NetworkManager's
+  // `ipv4.method shared` handles address, DHCP/DNS (dnsmasq), forwarding and
+  // NAT; it always NATs out whatever holds the default route, so you only pick
+  // the target. Wired uses a shared-method connection, Wi-Fi puts the radio in
+  // AP mode -- and one radio cannot be client and AP at once, so Wi-Fi to Wi-Fi
+  // is not possible. Runs in a floating terminal because gum needs a TTY.
+  "trigger.utilities.netshare": {"icon":"\udb84\udc9f","label":"Share network","aliases":["share","hotspot","tether","nat","internet"],"description":"Share this connection with another adapter"},
+  "trigger.utilities.netshare.share": {"icon":"\udb81\udf1c","label":"Share to an adapter","aliases":["share","tether"],"description":"Pick an adapter to share the internet connection with","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-network-share'\""},
+  "trigger.utilities.netshare.stop": {"icon":"\udb81\udf1d","label":"Stop sharing","aliases":["unshare","stop"],"description":"Tear down any active shares and hotspots","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-network-share stop; read -rsn1 -p \\\"Press any key...\\\"'\""},
+  "trigger.utilities.netshare.status": {"icon":"\uf0a0","label":"Sharing status","aliases":["status"],"description":"Show the uplink and any active shares","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-network-share status; read -rsn1 -p \\\"Press any key...\\\"'\""}
 
 }
