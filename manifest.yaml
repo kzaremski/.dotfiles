@@ -109,6 +109,11 @@ dotfiles:
     description: Remux AAC to PCM in place so Resolve on Linux can read the audio
     labels: [tools, omarchy, current]
 
+  - source: .local/bin/battery-report
+    dest: .local/bin/battery-report
+    description: Summarise battery usage from UPower's own history (no root needed)
+    labels: [tools, common, current]
+
   - source: .local/bin/dotfiles-packages
     dest: .local/bin/dotfiles-packages
     description: Save/restore the explicit package lists in packages/

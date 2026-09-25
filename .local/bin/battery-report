@@ -1,0 +1,132 @@
+#!/usr/bin/env python3
+"""battery-report -- summarise battery usage from UPower's own history.
+
+UPower already records charge, rate, voltage and time-to-empty for every
+battery; there is no need to run a separate collector. The .dat files under
+/var/lib/upower are root-only, but the same data is exposed over D-Bus via
+Device.GetHistory, which needs no privileges.
+
+  battery-report              last 24h
+  battery-report -H 168       last week
+  battery-report --raw        tab-separated samples, for piping elsewhere
+"""
+import argparse, ast, collections, datetime, subprocess, sys
+
+DEV = "/org/freedesktop/UPower/devices/battery_BATT"
+STATE = {0: "unknown", 1: "charging", 2: "discharging", 3: "empty",
+         4: "fully-charged", 5: "pending-charge", 6: "pending-discharge"}
+
+
+def history(kind, seconds, points=20000):
+    """Device.GetHistory(kind, timespan, resolution) -> [(epoch, value, state)]"""
+    try:
+        out = subprocess.run(
+            ["gdbus", "call", "--system", "--dest", "org.freedesktop.UPower",
+             "--object-path", DEV, "--method",
+             "org.freedesktop.UPower.Device.GetHistory",
+             kind, str(seconds), str(points)],
+            capture_output=True, text=True, timeout=30).stdout.strip()
+    except Exception as e:
+        sys.exit(f"battery-report: cannot reach UPower: {e}")
+    if not out.startswith("(["):
+        sys.exit("battery-report: unexpected reply from UPower")
+    # gdbus prints GVariant, not Python: strip the type annotations.
+    for t in ("uint32 ", "int32 ", "double "):
+        out = out.replace(t, "")
+    # Reply is "([(t, v, s), ...],)" -- take the inner list by its brackets
+    # rather than slicing offsets, which is easy to get wrong.
+    try:
+        rows = ast.literal_eval(out[out.index("["):out.rindex("]") + 1])
+    except Exception as e:
+        sys.exit(f"battery-report: could not parse UPower reply: {e}")
+    return sorted((int(t), float(v), STATE.get(int(s), str(s))) for t, v, s in rows)
+
+
+def prop(name):
+    """Exact key match -- `capacity` must not match `capacity-level`."""
+    out = subprocess.run(["upower", "-i", DEV], capture_output=True, text=True).stdout
+    for line in out.splitlines():
+        k, _, v = line.partition(":")
+        if k.strip() == name:
+            return v.strip()
+    return "?"
+
+
+def cycles():
+    """Cycle count, or an honest "not reported".
+
+    Many ACPI batteries never populate this -- the GPD Pocket 4's GFL
+    NB0373-465272 is one. sysfs then reads a literal 0, which looks like a
+    brand-new battery rather than missing data, so cross-check upower: it
+    prints charge-cycles: N/A when the firmware does not supply it.
+    """
+    import glob
+    raw = None
+    for f in glob.glob("/sys/class/power_supply/BAT*/cycle_count"):
+        try:
+            raw = open(f).read().strip()
+            break
+        except OSError:
+            pass
+    if prop("charge-cycles") in ("N/A", "?", "") and raw in ("0", None, ""):
+        return "not reported by firmware"
+    return raw or "not reported by firmware"
+
+
+def main():
+    ap = argparse.ArgumentParser(prog="battery-report")
+    ap.add_argument("-H", "--hours", type=float, default=24)
+    ap.add_argument("--raw", action="store_true")
+    a = ap.parse_args()
+    span = int(a.hours * 3600)
+
+    charge, rate = history("charge", span), history("rate", span)
+    if not charge:
+        sys.exit("battery-report: no history in that window")
+
+    if a.raw:
+        for t, v, s in rate:
+            print(f"{t}\t{v:.3f}\t{s}")
+        return
+
+    now, full = prop("percentage"), prop("energy-full")
+    design, health = prop("energy-full-design"), prop("capacity")
+    print(f"  now      {now}   {prop('state')}   {prop('energy-rate')}")
+    print(f"  health   {health}   ({full} of {design})")
+    print(f"  cycles   {cycles()}")
+
+    span_h = (charge[-1][0] - charge[0][0]) / 3600
+    print(f"\n  window   {datetime.datetime.fromtimestamp(charge[0][0]):%a %d %b %H:%M}"
+          f"  ->  {datetime.datetime.fromtimestamp(charge[-1][0]):%a %d %b %H:%M}"
+          f"   ({span_h:.1f} h, {len(charge)} samples)")
+
+    dur = collections.Counter()
+    for i in range(len(charge) - 1):
+        dur[charge[i][2]] += charge[i + 1][0] - charge[i][0]
+    total = sum(dur.values()) or 1
+    print("\n  time in each state")
+    for st, sec in dur.most_common():
+        print(f"    {st:<16}{sec/3600:6.1f} h  {100*sec/total:5.1f}%")
+
+    dis = sorted(v for _, v, s in rate if s == "discharging" and 0 < v < 200)
+    if dis:
+        n = len(dis)
+        med = dis[n // 2]
+        try:
+            wh = float(full.split()[0])
+        except Exception:
+            wh = None
+        print("\n  discharge power (W)")
+        print(f"    min {dis[0]:.1f}   median {med:.1f}   "
+              f"p90 {dis[int(n*0.9)]:.1f}   max {dis[-1]:.1f}   (n={n})")
+        if wh and med:
+            print(f"    at median draw, a full {wh:.1f} Wh -> {wh/med:.1f} h runtime")
+
+    chg = sorted(v for _, v, s in rate if s == "charging" and 0 < v < 200)
+    if chg:
+        print("\n  charge power (W)")
+        print(f"    median {chg[len(chg)//2]:.1f}   max {chg[-1]:.1f}   (n={len(chg)})")
+
+
+if __name__ == "__main__":
+    main()
