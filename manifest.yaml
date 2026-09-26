@@ -55,6 +55,14 @@ dotfiles:
     description: Bar widget - per-monitor workspaces with scroll-to-switch
     labels: [wm, omarchy, wayland, current]
 
+  # Electron reads XDG_CURRENT_DESKTOP to choose a credential backend and does
+  # not recognise "Hyprland"; without this it can fall back to plaintext and
+  # report that sign-in will not be saved.
+  - source: .config/claude-desktop-flags.conf
+    dest: .config/claude-desktop-flags.conf
+    description: Claude Desktop Electron flags (Wayland keyring backend)
+    labels: [dev, wayland, current]
+
   # File-level: ~/.local/bin also holds installed tooling (claude, gh, ...)
   - source: .local/bin/omarchy-ascii
     dest: .local/bin/omarchy-ascii

@@ -18,6 +18,7 @@ btop
 btrfs-progs
 chromium
 clang
+claude-desktop
 cliamp
 clinfo
 cmake
@@ -33,6 +34,7 @@ docker-compose
 dosfstools
 dotnet-runtime
 dua-cli
+edk2-ovmf
 efibootmgr
 evince
 exfatprogs
@@ -161,6 +163,7 @@ pydf
 python-gobject
 python-numpy
 python-poetry-core
+qemu-system-x86
 qemu-user-static-binfmt
 qrencode
 qt5-multimedia
@@ -210,6 +213,7 @@ unixodbc
 usage
 usbutils
 uwsm
+virtiofsd
 vulkan-radeon
 whois
 wireless-regdb
