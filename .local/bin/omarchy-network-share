@@ -54,7 +54,7 @@ share_wired() {
         ipv4.method shared ipv6.method ignore >/dev/null \
     || die "could not create the shared connection on $dev"
   nmcli con up "$con" >/dev/null || die "could not bring up $con"
-  allow_firewall "$dev"
+  allow_firewall "$dev" "${2:-}"
   note "Sharing ${2:-internet} to $dev"
   ip -4 -br addr show "$dev" | sed 's/^/    /'
 }
@@ -72,12 +72,54 @@ share_wifi() {
   ip -4 -br addr show "$dev" | sed 's/^/    /'
 }
 
-# UFW defaults to DROP inbound, which eats the clients' DHCP and DNS.
+# UFW defaults to DROP for both inbound and routed traffic, and a share needs
+# both allowed:
+#   inbound -- or the clients' DHCP and DNS never reach dnsmasq, so they get
+#              no address at all;
+#   routed  -- or they get an address but no internet. NetworkManager installs
+#              its own accept rules in an nm-shared-<dev> table, but nftables
+#              runs *every* base chain registered on the forward hook and an
+#              accept only ends the chain it is in, so ufw's `policy drop`
+#              still discards packets nm-shared already accepted.
+# Both rules go in under a single pkexec so this only asks for a password once.
 allow_firewall() {
+  local dev="$1" up="${2:-}"
   command -v ufw >/dev/null || return 0
-  pkexec /usr/bin/ufw allow in on "$1" >/dev/null 2>&1 \
-    && note "ufw: allowed inbound on $1" \
-    || note "ufw: could not add rule (clients may not get DHCP)"
+  [ -n "$up" ] || up=$(uplink)
+  pkexec /bin/bash -c '
+    ufw allow in on "$1" >/dev/null 2>&1 || exit 1
+    [ -n "$2" ] || exit 3
+    ufw route allow in on "$1" out on "$2" >/dev/null 2>&1 || exit 2
+  ' _ "$dev" "$up"
+  case $? in
+    0) note "ufw: inbound on $dev, routing $dev -> $up" ;;
+    1) note "ufw: could not allow inbound on $dev (clients may not get DHCP)" ;;
+    2) note "ufw: could not allow routing (clients get an address but no internet)" ;;
+    3) note "ufw: no uplink to route to -- allowed inbound on $dev only" ;;
+    *) note "ufw: rules were not applied" ;;
+  esac
+}
+
+# Drop both rules again. The route rule embeds the uplink, which may have
+# changed since the share was started, so find it by device rather than
+# reconstructing the original rule. Delete by index, highest first, because
+# the numbers shift as each rule goes.
+deny_firewall() {
+  local dev="$1"
+  command -v ufw >/dev/null || return 0
+  pkexec /bin/bash -c '
+    dev=$1
+    ufw delete allow in on "$dev" >/dev/null 2>&1
+    while :; do
+      n=$(ufw status numbered 2>/dev/null \
+          | grep "ALLOW FWD" \
+          | grep -E "on ${dev}[[:space:]]*$" \
+          | sed -nE "s/^[[:space:]]*\\[[[:space:]]*([0-9]+)\\].*/\\1/p" \
+          | sort -rn | head -1)
+      [ -n "$n" ] || break
+      ufw --force delete "$n" >/dev/null 2>&1 || break
+    done
+  ' _ "$dev"
 }
 
 stop_sharing() {
@@ -86,8 +128,7 @@ stop_sharing() {
   printf '%s\n' "$rows" | while IFS=$'\t' read -r n d; do
     nmcli con down "$n" >/dev/null 2>&1
     [[ $n == "$PREFIX"* ]] && nmcli con delete "$n" >/dev/null 2>&1
-    command -v ufw >/dev/null && [ -n "$d" ] && \
-      pkexec /usr/bin/ufw delete allow in on "$d" >/dev/null 2>&1
+    [ -n "$d" ] && deny_firewall "$d"
     note "stopped $n${d:+ on $d}"
   done
 }
