@@ -2,36 +2,79 @@
 # Replace AAC audio with PCM in place, leaving the video stream untouched.
 #
 # Resolve on Linux cannot decode AAC in ANY edition. Video is stream-copied, so
-# this is lossless and takes ~0.1s per clip. Gyro/telemetry data streams are
-# preserved; only the MJPEG thumbnail is dropped.
+# this is lossless and takes ~0.1s per clip. -map 0 preserves DJI gyro/telemetry
+# streams, which Gyroflow needs and a narrower mapping silently drops.
 #
-# Safety: writes to a temp file, verifies the video stream hash matches the
-# original BEFORE replacing anything. A clip that fails verification is left
-# untouched and reported.
+# Verification before replacing anything:
+#   - video stream hash must match the original bit-for-bit
+#   - audio duration and sample count must survive the conversion
+# A clip failing either is left untouched and reported.
+#
+# It also WARNS when a source's audio is far shorter than its video. That is not
+# something this script can cause -- it means the recording itself lost audio --
+# but it is worth knowing before you cut rather than during. An earlier version
+# checked only the video hash, so a 22-minute screen recording carrying 8s of
+# audio passed silently as "ok".
 set -uo pipefail
 DIR="${1:?usage: resolve-fix-audio <dir of clips>}"
-ok=0; skip=0; fail=0
+ok=0; skip=0; fail=0; warn=0
 
-for f in "$DIR"/*.MP4 "$DIR"/*.mov "$DIR"/*.MOV; do
+# Stream duration in seconds, or empty.
+dur() { ffprobe -v error -select_streams "$2" -show_entries stream=duration \
+        -of csv=p=0 "$1" 2>/dev/null | head -1 | cut -d. -f1; }
+# Decoded sample count for the first audio stream. Samples are codec-independent,
+# so this is comparable across the AAC -> PCM conversion (frame counts are not:
+# AAC packs 1024 samples per frame, PCM packetises differently).
+#
+# NOTE: astats prints at INFO level. An earlier version passed -v error here, so
+# this always returned empty and the guard below silently never ran.
+nsamples() { ffmpeg -nostdin -v info -i "$1" -map 0:a:0 -af astats=metadata=1 \
+             -f null - 2>&1 | grep -m1 -oE "Number of samples: [0-9]+" \
+             | grep -oE "[0-9]+$"; }
+
+for f in "$DIR"/*.MP4 "$DIR"/*.mov "$DIR"/*.MOV "$DIR"/*.mp4; do
   [ -f "$f" ] || continue
-  # Already PCM? nothing to do.
-  if ffprobe -v error -select_streams a -show_entries stream=codec_name -of csv=p=0 "$f" 2>/dev/null | grep -q '^pcm'; then
-    echo "  skip (already PCM): $(basename "$f")"; skip=$((skip+1)); continue
+  base=$(basename "$f")
+
+  if ffprobe -v error -select_streams a -show_entries stream=codec_name \
+       -of csv=p=0 "$f" 2>/dev/null | grep -q '^pcm'; then
+    echo "  skip (already PCM): $base"; skip=$((skip+1)); continue
   fi
+
+  vdur=$(dur "$f" v:0); adur=$(dur "$f" a:0)
+  # Audio materially shorter than video => the SOURCE is short, not us.
+  if [ -n "$vdur" ] && [ -n "$adur" ] && [ "$vdur" -gt 0 ] \
+     && [ "$adur" -lt $((vdur * 90 / 100)) ]; then
+    echo "  WARN: $base -- source audio is ${adur}s for ${vdur}s of video"
+    warn=$((warn+1))
+  fi
+
   before=$(ffmpeg -nostdin -v error -i "$f" -map 0:v:0 -c copy -f md5 - 2>/dev/null)
+  a_before=$(nsamples "$f")
   tmp="$f.remux.tmp"
+
   if ! ffmpeg -nostdin -v error -y -i "$f" -map 0 -c copy -c:a pcm_s16le -f mov "$tmp" 2>/dev/null; then
-    echo "  FAIL (encode): $(basename "$f")"; rm -f "$tmp"; fail=$((fail+1)); continue
+    echo "  FAIL (encode): $base"; rm -f "$tmp"; fail=$((fail+1)); continue
   fi
+
   after=$(ffmpeg -nostdin -v error -i "$tmp" -map 0:v:0 -c copy -f md5 - 2>/dev/null)
-  if [ -n "$before" ] && [ "$before" = "$after" ]; then
-    touch -r "$f" "$tmp"          # preserve mtime; Resolve and you both read these
-    mv -f "$tmp" "$f"
-    echo "  ok: $(basename "$f")"; ok=$((ok+1))
-  else
-    echo "  FAIL (video hash mismatch, original untouched): $(basename "$f")"
-    rm -f "$tmp"; fail=$((fail+1))
+  a_after=$(nsamples "$tmp")
+
+  if [ -z "$before" ] || [ "$before" != "$after" ]; then
+    echo "  FAIL (video hash mismatch, original untouched): $base"
+    rm -f "$tmp"; fail=$((fail+1)); continue
   fi
+  # Allow a frame or two of slack, but nothing like a truncation.
+  if [ -n "$a_before" ] && [ -n "$a_after" ] \
+     && [ "$a_after" -lt $((a_before * 99 / 100)) ]; then
+    echo "  FAIL (audio lost ${a_before} -> ${a_after} samples, original untouched): $base"
+    rm -f "$tmp"; fail=$((fail+1)); continue
+  fi
+
+  touch -r "$f" "$tmp"
+  mv -f "$tmp" "$f"
+  echo "  ok: $base"; ok=$((ok+1))
 done
+
 echo
-echo "  converted=$ok  already-pcm=$skip  failed=$fail"
+echo "  converted=$ok  already-pcm=$skip  failed=$fail  short-source-warnings=$warn"
