@@ -126,6 +126,19 @@
   "trigger.utilities.netshare": {"icon":"\udb84\udc9f","label":"Share network","aliases":["share","hotspot","tether","nat","internet"],"description":"Share this connection with another adapter"},
   "trigger.utilities.netshare.share": {"icon":"\udb81\udf1c","label":"Share to an adapter","aliases":["share","tether"],"description":"Pick an adapter to share the internet connection with","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-network-share'\""},
   "trigger.utilities.netshare.stop": {"icon":"\udb81\udf1d","label":"Stop sharing","aliases":["unshare","stop"],"description":"Tear down any active shares and hotspots","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-network-share stop; read -rsn1 -p \\\"Press any key...\\\"'\""},
-  "trigger.utilities.netshare.status": {"icon":"\uf0a0","label":"Sharing status","aliases":["status"],"description":"Show the uplink and any active shares","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-network-share status; read -rsn1 -p \\\"Press any key...\\\"'\""}
+  "trigger.utilities.netshare.status": {"icon":"\uf0a0","label":"Sharing status","aliases":["status"],"description":"Show the uplink and any active shares","action":"omarchy-launch-or-focus-tui \"bash -c 'omarchy-network-share status; read -rsn1 -p \\\"Press any key...\\\"'\""},
+
+  // ---- Style moved under Setup ---------------------------------------
+  // Stock Omarchy puts Style on the root menu next to Setup. Nest it instead.
+  //
+  // A "link" row (target) is used rather than re-declaring the ~20 style.*
+  // children as setup.style.*: the children stay parented to "style", so
+  // anything Omarchy adds or changes upstream shows up here for free.
+  //
+  // isVisible() resolves a link through entry.target and only consults "when"
+  // for the row itself, so hiding the root "style" row does not hide the
+  // children reached through the link.
+  "style": {"icon":"\uebcf","label":"Style","when":"false"},
+  "setup.style": {"icon":"\uebcf","label":"Style","title":"Style","target":"style","aliases":["style","theme","appearance","look"],"description":"Theme, background, font, menu bar"}
 
 }
