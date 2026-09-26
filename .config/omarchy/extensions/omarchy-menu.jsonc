@@ -139,6 +139,17 @@
   // for the row itself, so hiding the root "style" row does not hide the
   // children reached through the link.
   "style": {"icon":"\uebcf","label":"Style","when":"false"},
-  "setup.style": {"icon":"\uebcf","label":"Style","title":"Style","target":"style","aliases":["style","theme","appearance","look"],"description":"Theme, background, font, menu bar"}
+  "setup.style": {"icon":"\uebcf","label":"Style","title":"Style","target":"style","aliases":["style","theme","appearance","look"],"description":"Theme, background, font, menu bar"},
+
+  // ---- Learn moved under About ---------------------------------------
+  // Same link trick as Style above, with one extra step: stock "about" is an
+  // action row (omarchy-launch-about), and normalizeItem() gives a row with an
+  // action kind "action", which cannot hold children. Clearing the action turns
+  // it into a submenu; the original action is kept as the first child so the
+  // about screen is still reachable, one keypress deeper.
+  "about": {"icon":"\uea74","label":"About","action":""},
+  "about.info": {"icon":"\uea74","label":"About","aliases":["about","version"],"description":"Omarchy version and credits","action":"omarchy-launch-about"},
+  "learn": {"icon":"\udb82\uddd1","label":"Learn","when":"false"},
+  "about.learn": {"icon":"\udb82\uddd1","label":"Learn","title":"Learn","target":"learn","aliases":["learn","docs","manual","help"],"description":"Keybindings, manuals and community"}
 
 }
