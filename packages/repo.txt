@@ -174,8 +174,10 @@ rocm-opencl-runtime
 ruby
 sane
 sddm
+signal-desktop
 slurp
 socat
+spotify
 squashfs-tools
 starship
 steam
