@@ -54,8 +54,8 @@ share_wired() {
         ipv4.method shared ipv6.method ignore >/dev/null \
     || die "could not create the shared connection on $dev"
   nmcli con up "$con" >/dev/null || die "could not bring up $con"
-  allow_firewall "$dev" "${2:-}"
-  nudge_client "$dev" "$con"
+  privileged_setup "$dev" "${2:-}" yes
+  verify_share "$con"
   note "Sharing ${2:-internet} to $dev"
   ip -4 -br addr show "$dev" | sed 's/^/    /'
 }
@@ -68,12 +68,15 @@ share_wifi() {
   [ ${#pass} -ge 8 ] || die "password must be at least 8 characters"
   nmcli dev wifi hotspot ifname "$dev" ssid "$ssid" password "$pass" >/dev/null \
     || die "could not start the hotspot (is the radio already a client?)"
-  allow_firewall "$dev"
+  privileged_setup "$dev"
   note "Hotspot '$ssid' up on $dev"
   ip -4 -br addr show "$dev" | sed 's/^/    /'
 }
 
-# UFW defaults to DROP for both inbound and routed traffic, and a share needs
+# Everything a share needs root for, in ONE pkexec so the password is asked
+# for once.
+#
+# ufw defaults to DROP for both inbound and routed traffic, and a share needs
 # both allowed:
 #   inbound -- or the clients' DHCP and DNS never reach dnsmasq, so they get
 #              no address at all;
@@ -82,48 +85,61 @@ share_wifi() {
 #              runs *every* base chain registered on the forward hook and an
 #              accept only ends the chain it is in, so ufw's `policy drop`
 #              still discards packets nm-shared already accepted.
-# Both rules go in under a single pkexec so this only asks for a password once.
-allow_firewall() {
-  local dev="$1" up="${2:-}"
-  command -v ufw >/dev/null || return 0
+#
+# The link bounce (wired only) fakes a carrier event. A client whose link was
+# already up before the share started has no reason to ask for an address and
+# will sit with a stale or absent config until the cable is physically
+# unplugged -- dnsmasq answering fine the whole time.
+#
+# Exits: 0 all done  1 inbound failed  2 routing failed
+#        3 no uplink, inbound only     4 link bounce failed
+#        5 ufw not installed, nothing to open
+privileged_setup() {
+  local dev="$1" up="${2:-}" bounce="${3:-no}"
   [ -n "$up" ] || up=$(uplink)
   pkexec /bin/bash -c '
-    ufw allow in on "$1" >/dev/null 2>&1 || exit 1
-    [ -n "$2" ] || exit 3
-    ufw route allow in on "$1" out on "$2" >/dev/null 2>&1 || exit 2
-  ' _ "$dev" "$up"
-  case $? in
-    0) note "ufw: inbound on $dev, routing $dev -> $up" ;;
+    dev=$1; up=$2; bounce=$3; rc=0
+    if command -v ufw >/dev/null 2>&1; then
+      ufw allow in on "$dev" >/dev/null 2>&1 || exit 1
+      if [ -n "$up" ]; then
+        ufw route allow in on "$dev" out on "$up" >/dev/null 2>&1 || exit 2
+      else
+        rc=3
+      fi
+    else
+      rc=5
+    fi
+    if [ "$bounce" = yes ]; then
+      ip link set "$dev" down 2>/dev/null || exit 4
+      sleep 1
+      ip link set "$dev" up 2>/dev/null || exit 4
+    fi
+    exit $rc
+  ' _ "$dev" "$up" "$bounce"
+  local rc=$? extra=""
+  [ "$bounce" = yes ] && extra=", bounced $dev for DHCP"
+  case $rc in
+    0) note "ufw: inbound on $dev, routing $dev -> $up$extra" ;;
     1) note "ufw: could not allow inbound on $dev (clients may not get DHCP)" ;;
     2) note "ufw: could not allow routing (clients get an address but no internet)" ;;
-    3) note "ufw: no uplink to route to -- allowed inbound on $dev only" ;;
-    *) note "ufw: rules were not applied" ;;
+    3) note "ufw: no uplink to route to -- allowed inbound on $dev only$extra" ;;
+    4) note "could not bounce $dev -- unplug and replug if the client gets no address" ;;
+    5) note "no ufw installed -- nothing to open${extra:+;${extra#,}}" ;;
+    *) note "privileged setup did not complete" ;;
   esac
 }
 
-# A client whose link was already up before the share started has no reason to
-# ask for an address, so it sits there with a stale or absent config until the
-# cable is physically unplugged -- the share looks dead even though dnsmasq is
-# answering fine. Drop and raise the link to fake that carrier event.
-#
 # Taking the link down can make NetworkManager treat the profile as externally
-# changed and deactivate it, so confirm the share came back and re-up it if not.
-nudge_client() {
-  local dev="$1" con="$2" i
-  pkexec /bin/bash -c 'ip link set "$1" down; sleep 1; ip link set "$1" up' _ "$dev" \
-    >/dev/null 2>&1 || {
-      note "could not bounce $dev -- unplug and replug if the client gets no address"
-      return
-    }
+# changed and deactivate it, so confirm the share came back and re-up it if
+# not. Needs no privileges, so it stays outside the pkexec above.
+verify_share() {
+  local con="$1" i
   for i in 1 2 3 4 5 6; do
     sleep 1
-    if nmcli -t -f NAME con show --active 2>/dev/null | grep -qx "$con"; then
-      note "bounced $dev so the client re-requests DHCP"
-      return
-    fi
+    nmcli -t -f NAME con show --active 2>/dev/null | grep -qx "$con" && return
   done
   nmcli con up "$con" >/dev/null 2>&1 \
-    && note "bounced $dev and re-activated $con" \
+    && note "re-activated $con after the link bounce" \
     || note "$con did not come back -- run: nmcli con up $con"
 }
 
