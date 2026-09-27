@@ -55,6 +55,7 @@ share_wired() {
     || die "could not create the shared connection on $dev"
   nmcli con up "$con" >/dev/null || die "could not bring up $con"
   allow_firewall "$dev" "${2:-}"
+  nudge_client "$dev" "$con"
   note "Sharing ${2:-internet} to $dev"
   ip -4 -br addr show "$dev" | sed 's/^/    /'
 }
@@ -98,6 +99,32 @@ allow_firewall() {
     3) note "ufw: no uplink to route to -- allowed inbound on $dev only" ;;
     *) note "ufw: rules were not applied" ;;
   esac
+}
+
+# A client whose link was already up before the share started has no reason to
+# ask for an address, so it sits there with a stale or absent config until the
+# cable is physically unplugged -- the share looks dead even though dnsmasq is
+# answering fine. Drop and raise the link to fake that carrier event.
+#
+# Taking the link down can make NetworkManager treat the profile as externally
+# changed and deactivate it, so confirm the share came back and re-up it if not.
+nudge_client() {
+  local dev="$1" con="$2" i
+  pkexec /bin/bash -c 'ip link set "$1" down; sleep 1; ip link set "$1" up' _ "$dev" \
+    >/dev/null 2>&1 || {
+      note "could not bounce $dev -- unplug and replug if the client gets no address"
+      return
+    }
+  for i in 1 2 3 4 5 6; do
+    sleep 1
+    if nmcli -t -f NAME con show --active 2>/dev/null | grep -qx "$con"; then
+      note "bounced $dev so the client re-requests DHCP"
+      return
+    fi
+  done
+  nmcli con up "$con" >/dev/null 2>&1 \
+    && note "bounced $dev and re-activated $con" \
+    || note "$con did not come back -- run: nmcli con up $con"
 }
 
 # Drop both rules again. The route rule embeds the uplink, which may have
