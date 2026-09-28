@@ -162,6 +162,11 @@ dotfiles:
     description: Recentre floating windows that drifted off-screen (SUPER+CTRL+G)
     labels: [tools, omarchy, current]
 
+  - source: .local/bin/omarchy-monitor-watch
+    dest: .local/bin/omarchy-monitor-watch
+    description: Reload display rules on monitor hotplug (flaky dock)
+    labels: [tools, omarchy, wayland, current]
+
   - source: .local/bin/omarchy-drive-mount
     dest: .local/bin/omarchy-drive-mount
     description: Menu-driven disk mounting (udisksctl, apfs-fuse for APFS)

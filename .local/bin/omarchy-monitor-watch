@@ -1,0 +1,75 @@
+#!/bin/bash
+# Re-apply the display rules whenever a monitor appears or vanishes.
+#
+# monitors.lua decides how to split the workspaces by checking which VE248
+# serials are attached: both panels get 1-5 / 6-10, a lone panel gets all ten.
+# Hyprland only evaluates that at config load, though, so when this dock drops
+# a panel mid-session -- which it does as it heats up -- workspaces stay pinned
+# to a monitor that is gone. They still answer SUPER+6..0 and still hold their
+# windows, but no attached output displays them.
+#
+# Listening for hotplug events and reloading re-runs that decision, so the
+# surviving panel picks up all ten workspaces on its own.
+#
+# Two things keep this from thrashing:
+#
+#   * Debounce. The dock flaps rather than failing cleanly -- the Hyprland log
+#     shows DP-6 and DP-9 being rechecked over and over during one unplug -- so
+#     events are coalesced and the reload happens once the stream goes quiet.
+#
+#   * Change detection. After the quiet period the current set of outputs is
+#     compared with the last one acted on, so a flap that ends where it started
+#     costs nothing. A reload re-applies every rule in the config, so it is not
+#     something to do on every twitch.
+set -uo pipefail
+
+debounce="${OMARCHY_MONITOR_DEBOUNCE:-3}"
+sock="${XDG_RUNTIME_DIR:-/run/user/$(id -u)}/hypr/${HYPRLAND_INSTANCE_SIGNATURE:-}/.socket2.sock"
+
+[ -S "$sock" ] || { echo "no Hyprland event socket at $sock" >&2; exit 1; }
+command -v socat >/dev/null || { echo "socat is required" >&2; exit 1; }
+
+# Only one watcher per Hyprland instance. Without this, a second one would
+# double every reload.
+lock="${XDG_RUNTIME_DIR:-/tmp}/omarchy-monitor-watch.lock"
+exec 9>"$lock"
+flock -n 9 || { echo "another watcher already holds $lock" >&2; exit 0; }
+
+outputs() {
+  hyprctl monitors 2>/dev/null | awk '/^Monitor /{print $2}' | sort | paste -sd,
+}
+
+last=$(outputs)
+pending=0
+
+while :; do
+  IFS= read -r -t "$debounce" line
+  rc=$?
+
+  if [ $rc -eq 0 ]; then
+    case "$line" in
+      monitoradded*|monitorremoved*) pending=1 ;;
+    esac
+    continue
+  fi
+
+  # read(1) returns >128 on timeout and 1 on EOF; only the timeout means the
+  # event stream simply went quiet. EOF means socat died or Hyprland exited.
+  if [ $rc -le 128 ]; then
+    echo "event stream closed" >&2
+    exit 0
+  fi
+
+  [ "$pending" -eq 1 ] || continue
+  pending=0
+
+  now=$(outputs)
+  if [ "$now" = "$last" ]; then
+    continue
+  fi
+
+  last="$now"
+  hyprctl reload >/dev/null 2>&1
+  command -v omarchy-notification-send >/dev/null &&
+    omarchy-notification-send -u low "Displays changed -- rules reloaded"
+done < <(socat -U - "UNIX-CONNECT:$sock")
