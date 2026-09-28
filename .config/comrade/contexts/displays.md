@@ -6,9 +6,11 @@
         |
         +-- dock's other TB port --> J5Create USB-C-to-HDMI --> RIGHT VE248
         |                                                       serial HCLMQS071226
-        +-- dock's DisplayPort ----> Insignia DP-to-HDMI
-                                     --> HDMI cable ----------> LEFT VE248
+        +-- dock's DisplayPort ----> DP-to-DVI --> DVI in ----> LEFT VE248
                                                                 serial F4LMQS087738
+
+Changed 2026-09-28: the left leg was dock DP -> Insignia DP-to-HDMI -> HDMI.
+That leg, NOT the USB-C one, is what kept dropping -- see below.
 
 Both panels are identical ASUS VE248s, so the serial is the ONLY thing that
 tells them apart. Connector names are worthless here: the same physical panel
@@ -19,6 +21,32 @@ that reason.
 Note both panels sit behind a protocol converter, and the dock is a third
 device in the chain. That is a lot of retimers between GPU and glass, and it
 is where every display fault so far has come from.
+
+## Which leg actually fails
+
+The LEFT panel is the one that drops, repeatedly, and the right has stayed up
+through all of it. Every dead-panel observation on 2026-09-27/28 was
+F4LMQS087738 sitting at 0x0 -- as DP-10, then DP-11 -- while HCLMQS071226 kept
+working. The left ran through the dock's DisplayPort output and an Insignia
+DP-to-HDMI adapter; that adapter has been replaced with a DP-to-DVI into the
+monitor's DVI input, and the leg is now on trial.
+
+Do not let the USB-C leg take the blame for this. The J5Create's Billboard
+refusal happened only when it was plugged DIRECTLY into the Pocket, which is a
+separate fault (see below). Through the dock, that leg has been the reliable
+one.
+
+Link rate is NOT a good predictor of which leg fails:
+
+    LEFT  (DP -> DVI)      Current 4 @ 0xa  == Verified 4 @ 0xa   full capability
+    RIGHT (TB -> J5Create) Current 4 @ 0x6  vs Verified 4 @ 0x1e  one fifth
+
+The right trains at a fifth of its capability and has been stable; the left
+trained at full capability and died anyway. RBR is a sign of a marginal link,
+not proof that it is the failing one. 5.18 Gbps still carries one 1920x1080@60
+stream (3.56 Gbps) with room to spare, and the two panels are on SEPARATE
+links -- they do not share a bandwidth budget, so "two streams will not fit"
+reasoning does not apply here.
 
 ## Failure modes seen, with their signatures
 
