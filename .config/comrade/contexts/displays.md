@@ -87,6 +87,33 @@ can use hyprctl freely.
 down for five minutes if it sees more than 12 events in 60 seconds -- a
 flapping link needs a cable, not more modesets.
 
+## USB-C direct to a monitor: check for a Billboard Device first
+
+If an external panel plugged straight into the Pocket shows nothing, check
+what the adapter enumerated as BEFORE investigating anything about the GPU:
+
+    lsusb | grep -i billboard
+
+    0bda:2172 Realtek Semiconductor Corp. BillBoard Device
+
+A USB Billboard Device is the spec-defined way an adapter reports that
+**alternate mode entry FAILED**. The adapter asked for DisplayPort alt mode,
+the port refused, and it fell back to announcing exactly that. No DP link is
+ever offered, so:
+
+  * a replug produces USB enumeration events and NO drm/hotplug activity;
+  * the connector may still read `connected` with a full mode list, stale from
+    an earlier session, while `enabled` stays `disabled`;
+  * `link_settings` shows `Current: 0 lanes` against a healthy
+    `Verified: 4 0x1e`, which looks like a training failure but is really
+    "never attempted";
+  * Hyprland walks every mode from 1920x1080 down to 720x400, each failing.
+
+Not all of the Pocket's USB-C ports carry DisplayPort. Try another port before
+suspecting the cable, the adapter, the monitor or the driver -- all four were
+chased here first, and all four were fine. The same adapter and panel worked
+immediately on a Mac.
+
 ## Dead ends / traps
 
 * **Reload alone was blamed for not re-homing workspaces. It does re-home
