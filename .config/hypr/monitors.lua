@@ -62,59 +62,21 @@ end
 -- regardless of plug order.
 --
 -- Run `hyprctl monitors` and read the `description:` line to get these strings.
-hl.monitor({
-  output = "desc:Ancor Communications Inc VE248 F4LMQS087738",
-  mode = "preferred", position = "0x0", scale = 1,      -- LEFT
-})
-hl.monitor({
-  output = "desc:Ancor Communications Inc VE248 HCLMQS071226",
-  mode = "preferred", position = "1920x0", scale = 1,   -- RIGHT
-})
+local left_serial = "F4LMQS087738"
+local right_serial = "HCLMQS071226"
+local dock_left = "desc:Ancor Communications Inc VE248 " .. left_serial
+local dock_right = "desc:Ancor Communications Inc VE248 " .. right_serial
 
--- Pin workspaces to specific monitors at the docking station.
+-- Is a display carrying this EDID string attached right now?
 --
--- 1-5 on the LEFT panel, 6-10 on the RIGHT (the bar renders workspace 10 as
--- "0", so that row reads 6 7 8 9 0).
---
--- Matched by `desc:` (which ends in the serial) for the same reason the
--- position rules are: both monitors are identical ASUS VE248s, and DP-6 /
--- DP-9 swap around with plug order.
---
--- persistent = true keeps each workspace alive even when empty, so they always
--- appear in that monitor's bar row rather than popping in and out.
--- default = true makes that workspace the one the monitor lands on.
---
--- Undocked, these descriptions match no connected output, but the rules are
--- NOT simply skipped: persistent = true still creates all ten workspaces, and
--- Hyprland falls them back onto the only monitor that does exist. Verified on
--- 0.56.2 -- `hyprctl workspaces` lists 1-10 on eDP-1 with no dock attached.
---
--- That would leave the bar showing ten slots, seven of them empty, so the
--- workspace widget hides empty ones when a single monitor is connected. See
--- laptopMode in ~/.config/omarchy/plugins/kzaremski.workspaces/Workspaces.qml.
-local dock_left = "desc:Ancor Communications Inc VE248 F4LMQS087738"
-local dock_right = "desc:Ancor Communications Inc VE248 HCLMQS071226"
-
--- Only pin when the dock is actually attached.
---
--- persistent = true creates the workspace even when the monitor its rule names
--- is absent -- known Hyprland behaviour (hyprwm/Hyprland#11758, #9947; Waybar
--- hits it too, Alexays/Waybar#3110). Undocked, these rules therefore claimed
--- 1-10 for monitors that do not exist, leaving the built-in panel with no
--- workspace of its own: Hyprland allocated it the first unclaimed number and
--- every undocked boot landed on workspace 11. Anything above 10 is unreachable
--- (bindings/tiling.lua only generates SUPER+1..0), so windows opened there were
--- effectively lost.
---
--- Gated on the VE248 EDID the same way the panel rule is gated on YHB03P24.
--- Undocked this block is skipped entirely, 1-10 stay unclaimed, and the panel
--- boots onto workspace 1 like any normal single-monitor setup.
---
--- Limitation: evaluated at config load. Docking mid-session does not re-run it,
--- so pinning only applies from the next `hyprctl reload` (or next login).
-local function dock_present()
+-- Gated on EDID rather than connector name for the same reason the rules match
+-- on `desc:`. Note the dock's panels do not appear under the internal GPU's
+-- connectors; they arrive on their own DRM card, so the glob has to span
+-- card*-* rather than naming one.
+local function edid_present(needle)
   local cmd = [[for d in /sys/class/drm/card*-*; do ]]
-    .. [[if grep -qa 'VE248' "$d/edid" 2>/dev/null; then echo yes; break; fi; done]]
+    .. [[if grep -qa ']] .. needle .. [[' "$d/edid" 2>/dev/null; then ]]
+    .. [[echo yes; break; fi; done]]
   local handle = io.popen(cmd)
   if not handle then return false end
   local out = handle:read("*a") or ""
@@ -122,24 +84,76 @@ local function dock_present()
   return out:match("yes") ~= nil
 end
 
-if dock_present() then
+local have_left = edid_present(left_serial)
+local have_right = edid_present(right_serial)
 
-for ws = 1, 5 do
-  hl.workspace_rule({
-    workspace = tostring(ws),
-    monitor = dock_left,
-    persistent = true,
-    default = ws == 1,
-  })
+-- The left panel anchors the desktop at the origin. The right one sits beside
+-- it normally, but takes the origin itself when the left is missing: a lone
+-- monitor parked at 1920x0 leaves the whole 0..1920 range with no screen
+-- behind it, and anything that naively places a window at 0,0 -- which plenty
+-- of XWayland apps do -- lands somewhere unreachable.
+--
+-- Both rules are emitted unconditionally even when that monitor is absent, so
+-- a panel that appears mid-session still gets its scale and position. Only the
+-- chosen coordinates depend on what was attached at config load.
+hl.monitor({
+  output = dock_left,
+  mode = "preferred", position = "0x0", scale = 1,          -- LEFT
+})
+hl.monitor({
+  output = dock_right,
+  mode = "preferred",
+  position = have_left and "1920x0" or "0x0",               -- RIGHT
+  scale = 1,
+})
+
+-- Pin workspaces to specific monitors at the docking station.
+--
+-- Both panels attached: 1-5 on the LEFT, 6-10 on the RIGHT (the bar renders
+-- workspace 10 as "0", so that row reads 6 7 8 9 0).
+--
+-- Only ONE attached: all ten go to whichever survived. This dock drops a panel
+-- when it heats up, and splitting the range in that state stranded half the
+-- workspaces -- persistent = true still creates them, so 6-10 existed but sat
+-- on a monitor that was gone, reachable by SUPER+6..0 yet displayed nowhere.
+--
+-- persistent = true keeps each workspace alive even when empty, so they always
+-- appear in that monitor's bar row rather than popping in and out.
+-- default = true makes that workspace the one the monitor lands on.
+--
+-- Neither attached: no rules at all. persistent = true creates the workspace
+-- even when the monitor its rule names is absent -- known Hyprland behaviour
+-- (hyprwm/Hyprland#11758, #9947; Waybar hits it too, Alexays/Waybar#3110).
+-- Undocked, these rules therefore claimed 1-10 for monitors that do not exist,
+-- leaving the built-in panel with no workspace of its own: Hyprland allocated
+-- it the first unclaimed number and every undocked boot landed on workspace 11.
+-- Anything above 10 is unreachable (bindings/tiling.lua only generates
+-- SUPER+1..0), so windows opened there were effectively lost. Skipping the
+-- block entirely leaves 1-10 unclaimed and the panel boots onto workspace 1.
+--
+-- With a single monitor the bar hides empty slots anyway -- see laptopMode in
+-- ~/.config/omarchy/plugins/kzaremski.workspaces/Workspaces.qml -- so all ten
+-- being pinned does not fill the row with blanks.
+--
+-- Limitation: evaluated at config load. Docking, undocking or losing a panel
+-- mid-session does not re-run it, so the layout only follows from the next
+-- `hyprctl reload` (SUPER+SHIFT+R) or next login.
+local function pin_range(first, last, monitor, default_ws)
+  for ws = first, last do
+    hl.workspace_rule({
+      workspace = tostring(ws),
+      monitor = monitor,
+      persistent = true,
+      default = ws == default_ws,
+    })
+  end
 end
 
-for ws = 6, 10 do
-  hl.workspace_rule({
-    workspace = tostring(ws),
-    monitor = dock_right,
-    persistent = true,
-    default = ws == 6,
-  })
+if have_left and have_right then
+  pin_range(1, 5, dock_left, 1)
+  pin_range(6, 10, dock_right, 6)
+elseif have_left then
+  pin_range(1, 10, dock_left, 1)
+elseif have_right then
+  pin_range(1, 10, dock_right, 1)
 end
-
-end -- dock_present()
