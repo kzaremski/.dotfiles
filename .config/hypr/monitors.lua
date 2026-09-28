@@ -87,45 +87,50 @@ end
 -- Is the panel with this serial actually usable right now?
 --
 -- EDID presence alone is not enough. This dock can leave a panel plugged in
--- and advertising its EDID while carrying no video signal, and Hyprland then
--- reports the monitor with a 0x0 mode: present, but nothing can be shown on
--- it. Pinning to it stranded 1-5 on a black screen, and the overflow landed
--- on a ghost workspace 11, which no binding can reach.
+-- and still advertising its EDID while carrying no video signal. DRM tells
+-- the two apart:
 --
---   live:  1920x1080@60.00000 at 1920x0
---   dead:  0x0@60.00000 at 0x0
+--   live:  status=connected  enabled=enabled   dpms=On
+--   dead:  status=connected  enabled=disabled  dpms=Off
 --
--- Hyprland's own view is authoritative, so prefer it. It is unavailable during
--- the very first config parse -- the IPC socket is not up yet -- so fall back
--- to the EDID scan there; a signal-less panel is not a state that has had time
--- to arise at startup, and a reload re-evaluates this properly anyway.
-local hypr_monitors = (function()
-  local handle = io.popen("hyprctl monitors 2>/dev/null")
+-- Trusting EDID pinned workspaces 1-5 to a black screen -- one of them holding
+-- a window -- while the overflow landed on a ghost workspace 11.
+--
+-- Hyprland's own view would be the authority here, but `hyprctl monitors`
+-- cannot be called from this file: Hyprland does not serve IPC while it is
+-- parsing its config, so the call returns nothing and every panel silently
+-- looks attached. Verified by probe -- during a reload the command yields no
+-- output at all. DRM sysfs has no such problem.
+local function drm_enabled(serial)
+  local cmd = [[for d in /sys/class/drm/*/; do ]]
+    .. [[if grep -qa ']] .. serial .. [[' "$d/edid" 2>/dev/null; then ]]
+    .. [[cat "$d/enabled" 2>/dev/null; break; fi; done]]
+  local handle = io.popen(cmd)
   if not handle then return nil end
   local out = handle:read("*a") or ""
   handle:close()
-  if out:find("Monitor ", 1, true) then return out end
-  return nil
-end)()
-
-local function panel_usable(serial)
-  if not hypr_monitors then return edid_present(serial) end
-  local w, h
-  for line in hypr_monitors:gmatch("[^\n]+") do
-    if line:match("^Monitor ") then w, h = nil, nil end
-    if not w then
-      local mw, mh = line:match("^%s*(%d+)x(%d+)@")
-      if mw then w, h = tonumber(mw), tonumber(mh) end
-    end
-    if line:find("description:", 1, true) and line:find(serial, 1, true) then
-      return (w or 0) > 0 and (h or 0) > 0
-    end
-  end
-  return false
+  out = out:match("^%s*(.-)%s*$")
+  if out == "" then return nil end
+  return out
 end
 
-local have_left = panel_usable(left_serial)
-local have_right = panel_usable(right_serial)
+local left_state = drm_enabled(left_serial)
+local right_state = drm_enabled(right_serial)
+
+-- On the very first parse Hyprland has not configured any output yet, so every
+-- connector reads "disabled" and the signal carries no information. Only trust
+-- it once something is actually lit; before that, fall back to mere presence,
+-- which is the old behaviour and correct for a normal docked boot.
+local any_enabled = (left_state == "enabled") or (right_state == "enabled")
+
+local function panel_usable(state)
+  if state == nil then return false end
+  if any_enabled then return state == "enabled" end
+  return true
+end
+
+local have_left = panel_usable(left_state)
+local have_right = panel_usable(right_state)
 
 -- The left panel anchors the desktop at the origin. The right one sits beside
 -- it normally, but takes the origin itself when the left is missing: a lone
