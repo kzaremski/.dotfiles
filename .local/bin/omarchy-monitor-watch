@@ -69,7 +69,15 @@ while :; do
   fi
 
   last="$now"
+
+  # Reload first so monitors.lua re-decides the split for whatever is attached
+  # now, then rehome. Both steps are needed and neither replaces the other:
+  # reload re-reads the rules but Hyprland only applies them when a monitor
+  # connects or a workspace is created, so workspaces that already exist stay
+  # on a panel that just died. Rehoming moves those.
   hyprctl reload >/dev/null 2>&1
+  omarchy-displays-rehome >/dev/null 2>&1
+
   command -v omarchy-notification-send >/dev/null &&
-    omarchy-notification-send -u low "Displays changed -- rules reloaded"
+    omarchy-notification-send -u low "Displays changed -- workspaces rehomed"
 done < <(socat -U - "UNIX-CONNECT:$sock")

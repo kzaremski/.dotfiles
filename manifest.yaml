@@ -167,6 +167,11 @@ dotfiles:
     description: Reload display rules on monitor hotplug (flaky dock)
     labels: [tools, omarchy, wayland, current]
 
+  - source: .local/bin/omarchy-displays-rehome
+    dest: .local/bin/omarchy-displays-rehome
+    description: Move workspaces off a dead/signal-less panel onto a working one
+    labels: [tools, omarchy, wayland, current]
+
   - source: .local/bin/omarchy-drive-mount
     dest: .local/bin/omarchy-drive-mount
     description: Menu-driven disk mounting (udisksctl, apfs-fuse for APFS)

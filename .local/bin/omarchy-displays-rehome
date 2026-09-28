@@ -1,0 +1,86 @@
+#!/bin/bash
+# Move every workspace onto a monitor that can actually display it.
+#
+# Hyprland applies monitor and workspace rules when a monitor connects and when
+# a workspace is created -- NOT retroactively. `hyprctl reload` therefore
+# re-reads monitors.lua without moving workspaces that already exist, so a
+# panel that dies keeps whatever it was holding.
+#
+# This dock has two ways of failing and both leave workspaces stranded:
+#
+#   * the panel disappears entirely;
+#   * the panel stays connected and keeps advertising EDID while carrying no
+#     signal, and Hyprland reports it with a 0x0 mode. Observed live: DP-11 sat
+#     at 0x0 holding workspaces 1-5, one of them with a window in it, all
+#     invisible.
+#
+# A monitor with a zero width or height is treated as dead here, which covers
+# both.
+#
+# The serials below mirror ~/.config/hypr/monitors.lua -- that file is the
+# source of truth for which physical panel is which.
+set -uo pipefail
+
+LEFT_SERIAL="${OMARCHY_LEFT_SERIAL:-F4LMQS087738}"
+RIGHT_SERIAL="${OMARCHY_RIGHT_SERIAL:-HCLMQS071226}"
+
+plan=$(LEFT="$LEFT_SERIAL" RIGHT="$RIGHT_SERIAL" python3 - <<'PY'
+import json, os, subprocess
+
+def hypr(*a):
+    out = subprocess.run(["hyprctl", *a, "-j"], capture_output=True, text=True).stdout
+    return json.loads(out) if out.strip() else []
+
+left_s, right_s = os.environ["LEFT"], os.environ["RIGHT"]
+mons = hypr("monitors")
+
+# A monitor with no mode cannot show anything, whatever it claims about itself.
+usable = [m for m in mons if m.get("width", 0) > 0 and m.get("height", 0) > 0]
+if not usable:
+    raise SystemExit(0)
+
+def by_serial(s):
+    return next((m["name"] for m in usable if s in (m.get("description") or "")), None)
+
+left, right = by_serial(left_s), by_serial(right_s)
+
+if left and right:
+    # Both panels alive: keep the intended split.
+    target = lambda wid: left if wid <= 5 else right
+else:
+    # One panel, or something else entirely (the built-in display). Everything
+    # goes to a single survivor, so all ten stay reachable.
+    only = left or right or usable[0]["name"]
+    target = lambda wid: only
+
+alive = {m["name"] for m in usable}
+for w in hypr("workspaces"):
+    wid, name, mon = w["id"], w["name"], w["monitor"]
+    if wid <= 0:
+        continue                      # special workspaces
+    if wid > 10 and w.get("windows", 0) == 0:
+        continue                      # empty ghost: the bar already hides it
+    want = target(wid)
+    if mon != want and (mon not in alive or wid <= 10):
+        print(f"{name}\t{mon}\t{want}")
+PY
+)
+
+if [ -z "$plan" ]; then
+  echo "every workspace is already on a working monitor"
+  exit 0
+fi
+
+moved=0
+while IFS=$'\t' read -r ws from to; do
+  [ -n "$ws" ] || continue
+  if hyprctl dispatch "hl.dsp.workspace.move({ workspace = \"$ws\", monitor = \"$to\" })" \
+       >/dev/null 2>&1; then
+    echo "  ws $ws: $from -> $to"
+    moved=$((moved + 1))
+  else
+    echo "  ws $ws: FAILED $from -> $to" >&2
+  fi
+done <<<"$plan"
+
+echo "moved $moved workspace(s)"
