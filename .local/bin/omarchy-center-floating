@@ -1,0 +1,61 @@
+#!/bin/bash
+# Centre every floating window on the current workspace.
+#
+# Floating windows hold absolute pixel coordinates, so when a monitor is
+# unplugged or the layout shifts, a window can end up parked entirely in
+# negative space: still listed by `hyprctl clients`, still focusable by
+# keyboard, but impossible to reach with the mouse and invisible on every
+# screen. Centring drags them back onto their monitor without disturbing
+# their size or float state.
+#
+#   omarchy-center-floating          current workspace only
+#   omarchy-center-floating --all    every workspace, including hidden ones
+#
+# Fullscreen windows are skipped: Hyprland's centre dispatcher only acts on
+# floating windows and reports "No floating window found" for them.
+set -uo pipefail
+
+scope="${1:-current}"
+
+mapfile -t rows < <(
+  ALL="$scope" python3 - <<'PY'
+import json, os, subprocess
+
+def hypr(*args):
+    out = subprocess.run(["hyprctl", *args, "-j"], capture_output=True, text=True).stdout
+    return json.loads(out) if out.strip() else None
+
+everywhere = os.environ.get("ALL") in ("--all", "-a", "all")
+active = hypr("activeworkspace")
+ws_id = active["id"] if active else None
+
+for c in hypr("clients") or []:
+    if not c.get("floating"):
+        continue
+    if not everywhere and c["workspace"]["id"] != ws_id:
+        continue
+    state = "fullscreen" if c.get("fullscreen") else "ok"
+    print("\t".join((c["address"], state, c["class"] or "?", c["workspace"]["name"])))
+PY
+)
+
+[ ${#rows[@]} -gt 0 ] || { echo "no floating windows to centre"; exit 0; }
+
+centred=0 skipped=0
+for row in "${rows[@]}"; do
+  IFS=$'\t' read -r addr state cls ws <<<"$row"
+  if [ "$state" = fullscreen ]; then
+    echo "  skipped $cls (ws $ws) -- fullscreen"
+    skipped=$((skipped + 1))
+    continue
+  fi
+  if hyprctl dispatch "hl.dsp.window.center({ window = \"address:$addr\" })" >/dev/null 2>&1; then
+    echo "  centred $cls (ws $ws)"
+    centred=$((centred + 1))
+  else
+    echo "  FAILED  $cls (ws $ws)"
+    skipped=$((skipped + 1))
+  fi
+done
+
+echo "centred $centred, skipped $skipped"

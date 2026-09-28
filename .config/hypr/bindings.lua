@@ -45,3 +45,21 @@ o.bind(
   "Reload Hyprland config",
   "sh -c 'hyprctl reload && " .. o.notify("Hyprland config reloaded") .. "'"
 )
+
+-- Rescue floating windows that have drifted off every screen.
+--
+-- A floating window holds absolute pixel coordinates, so unplugging a monitor
+-- or changing the layout can leave one parked entirely in negative space: it
+-- still shows in `hyprctl clients` and still takes keyboard focus, but no
+-- monitor covers those coordinates so the mouse can never reach it. Happened
+-- with Forza, which sat at x=-1760 after the internal panel went away.
+--
+-- Centres every floating window on the current workspace; pass --all to sweep
+-- every workspace. Fullscreen windows are skipped -- Hyprland's centre
+-- dispatcher only acts on floating ones.
+o.bind(
+  "SUPER + CTRL + G",
+  "Gather floating windows",
+  "sh -c 'omarchy-center-floating >/dev/null && " ..
+    o.notify("Floating windows centred") .. "'"
+)

@@ -150,6 +150,13 @@
   "about": {"icon":"\uea74","label":"About","action":""},
   "about.info": {"icon":"\uea74","label":"About","aliases":["about","version"],"description":"Omarchy version and credits","action":"omarchy-launch-about"},
   "learn": {"icon":"\udb82\uddd1","label":"Learn","when":"false"},
-  "about.learn": {"icon":"\udb82\uddd1","label":"Learn","title":"Learn","target":"learn","aliases":["learn","docs","manual","help"],"description":"Keybindings, manuals and community"}
+  "about.learn": {"icon":"\udb82\uddd1","label":"Learn","title":"Learn","target":"learn","aliases":["learn","docs","manual","help"],"description":"Keybindings, manuals and community"},
+
+  // ---- Rescue off-screen floating windows -----------------------------
+  // A floating window holds absolute pixel coordinates, so unplugging a
+  // monitor can leave one parked in negative space: listed by hyprctl and
+  // focusable by keyboard, but under no monitor, so the mouse cannot reach
+  // it. Sweeps every workspace; also on SUPER+CTRL+G.
+  "trigger.utilities.center-floating": {"icon":"\uf05b","label":"Centre floating windows","aliases":["center","centre","floating","offscreen","lost","rescue"],"description":"Pull floating windows that drifted off-screen back onto a monitor","action":"sh -c 'omarchy-center-floating --all >/dev/null && omarchy-notification-send -u low \"Floating windows centred\"'"}
 
 }
