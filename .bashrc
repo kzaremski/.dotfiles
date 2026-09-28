@@ -13,6 +13,11 @@ source "$OMARCHY_PATH/default/bash/rc"
 # Make an alias for invoking commands you use constantly
 # alias p='python'
 
+# Resume the long-running Claude Code session for this machine's own config.
+# && rather than ; so it cannot start the session in the wrong directory if
+# ~/Work is missing.
+alias pw='cd ~/Work && claude --resume "Pocket Worker"'
+
 # Use the systemd-managed ssh-agent (see ~/.config/environment.d/10-ssh-agent.conf).
 # Guarded: a no-op once environment.d has already exported SSH_AUTH_SOCK.
 if [ -z "$SSH_AUTH_SOCK" ] && [ -S "$XDG_RUNTIME_DIR/ssh-agent.socket" ]; then
