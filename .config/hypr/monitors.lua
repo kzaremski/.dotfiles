@@ -156,14 +156,23 @@ local have_right = panel_usable(right_state)
 -- Both rules are emitted unconditionally even when that monitor is absent, so
 -- a panel that appears mid-session still gets its scale and position. Only the
 -- chosen coordinates depend on what was attached at config load.
+-- Explicit side-by-side coordinates only make sense when BOTH dock panels are
+-- up. With just one, hardcoding an origin collides with the built-in display,
+-- which is already at 0x0: Hyprland cannot place two outputs on the same
+-- origin and the external one loses, coming up with no mode at all. Seen
+-- exactly that -- lid shut, the external worked (the panel had 0x0 to itself
+-- and showed the lock screen); lid open, it went dark. "auto" lets Hyprland
+-- lay a lone panel out beside whatever else is lit.
 hl.monitor({
   output = dock_left,
-  mode = "preferred", position = "0x0", scale = 1,          -- LEFT
+  mode = "preferred",
+  position = have_right and "0x0" or "auto",                -- LEFT
+  scale = 1,
 })
 hl.monitor({
   output = dock_right,
   mode = "preferred",
-  position = have_left and "1920x0" or "0x0",               -- RIGHT
+  position = have_left and "1920x0" or "auto",              -- RIGHT
   scale = 1,
 })
 
