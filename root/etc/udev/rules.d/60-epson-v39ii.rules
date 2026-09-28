@@ -1,0 +1,11 @@
+# Epson Perfection V39 II (04b8:013f) -- restrict access to the seat owner.
+#
+# epsonscan2 ships its own rule that sets MODE="0666" for esci devices, which
+# makes the scanner world-writable to every local process. This sorts before
+# it and hands the device to whoever is actually logged in at the seat
+# instead, which is what uaccess is for.
+#
+# This rule is about PERMISSIONS only. The firmware upload is epsonscan2's
+# rule (60-epsonscan2.rules), which tags the device with
+# ENV{firmware_file}="esfw0282.bin" on connect.
+ATTRS{idVendor}=="04b8", ATTRS{idProduct}=="013f", MODE="0664", TAG+="uaccess"

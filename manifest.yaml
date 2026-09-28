@@ -103,6 +103,12 @@ dotfiles:
     labels: [system, recovery, omarchy, current]
     system: true
 
+  - source: etc/udev/rules.d/60-epson-v39ii.rules
+    dest: /etc/udev/rules.d/60-epson-v39ii.rules
+    description: Scanner to the seat owner, not world-writable as epsonscan2 ships it
+    labels: [system, scanner, omarchy, current]
+    system: true
+
   - source: etc/ssh/sshd_config.d/99-tailnet.conf
     dest: /etc/ssh/sshd_config.d/99-tailnet.conf
     description: SSH for recovery - keys only, reachable on the tailnet via ufw

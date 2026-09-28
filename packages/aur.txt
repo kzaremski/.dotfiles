@@ -1,8 +1,12 @@
 anytype-bin
 apfs-fuse-git
+bbe
 davinci-resolve-studio
+epsonscan2
+epsonscan2-debug
 figlet-fonts
 google-chrome
 libfprint-ft9201
 onedrive-abraunegg
+qt5-singlecoreapplication
 slack-desktop

@@ -12,6 +12,7 @@ bluez
 bluez-tools
 bluez-utils
 bolt
+boost
 bpytop
 brightnessctl
 btop
@@ -171,6 +172,7 @@ qt5-quickcontrols2
 qt5-wayland
 qt6-imageformats
 quickshell
+rapidjson
 remmina
 ripgrep
 rocm-opencl-runtime
