@@ -157,6 +157,6 @@
   // monitor can leave one parked in negative space: listed by hyprctl and
   // focusable by keyboard, but under no monitor, so the mouse cannot reach
   // it. Sweeps every workspace; also on SUPER+CTRL+G.
-  "trigger.utilities.center-floating": {"icon":"\uf05b","label":"Centre floating windows","aliases":["center","centre","floating","offscreen","lost","rescue"],"description":"Pull floating windows that drifted off-screen back onto a monitor","action":"sh -c 'omarchy-center-floating --all >/dev/null && omarchy-notification-send -u low \"Floating windows centred\"'"}
+  "trigger.utilities.center-floating": {"icon":"\uf05b","label":"Centre floating windows","aliases":["center","centre","floating","offscreen","lost","rescue"],"description":"Pull floating windows that drifted off-screen back onto a monitor","action":"omarchy-center-floating --all --notify"}
 
 }

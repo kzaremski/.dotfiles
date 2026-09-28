@@ -8,14 +8,33 @@
 # screen. Centring drags them back onto their monitor without disturbing
 # their size or float state.
 #
-#   omarchy-center-floating          current workspace only
-#   omarchy-center-floating --all    every workspace, including hidden ones
+#   omarchy-center-floating             current workspace only
+#   omarchy-center-floating --all       every workspace, including hidden ones
+#   omarchy-center-floating --notify    also raise a desktop notification
+#
+# --notify exists so callers do not have to wrap this in `sh -c "... && notify"`.
+# o.notify() single-quotes its message, and nesting that inside a single-quoted
+# sh -c silently truncates it to the first word.
 #
 # Fullscreen windows are skipped: Hyprland's centre dispatcher only acts on
 # floating windows and reports "No floating window found" for them.
 set -uo pipefail
 
-scope="${1:-current}"
+scope=current
+notify=no
+for arg in "$@"; do
+  case "$arg" in
+    --all|-a)    scope=all ;;
+    --notify|-n) notify=yes ;;
+    *) echo "unknown option: $arg" >&2; exit 2 ;;
+  esac
+done
+
+announce() {
+  [ "$notify" = yes ] || return 0
+  command -v omarchy-notification-send >/dev/null || return 0
+  omarchy-notification-send -u low "$1"
+}
 
 mapfile -t rows < <(
   ALL="$scope" python3 - <<'PY'
@@ -25,7 +44,7 @@ def hypr(*args):
     out = subprocess.run(["hyprctl", *args, "-j"], capture_output=True, text=True).stdout
     return json.loads(out) if out.strip() else None
 
-everywhere = os.environ.get("ALL") in ("--all", "-a", "all")
+everywhere = os.environ.get("ALL") == "all"
 active = hypr("activeworkspace")
 ws_id = active["id"] if active else None
 
@@ -39,7 +58,11 @@ for c in hypr("clients") or []:
 PY
 )
 
-[ ${#rows[@]} -gt 0 ] || { echo "no floating windows to centre"; exit 0; }
+if [ ${#rows[@]} -eq 0 ]; then
+  echo "no floating windows to centre"
+  announce "No floating windows to centre"
+  exit 0
+fi
 
 centred=0 skipped=0
 for row in "${rows[@]}"; do
@@ -59,3 +82,11 @@ for row in "${rows[@]}"; do
 done
 
 echo "centred $centred, skipped $skipped"
+
+if [ "$centred" -eq 0 ]; then
+  announce "Nothing to centre (skipped $skipped)"
+elif [ "$skipped" -gt 0 ]; then
+  announce "Centred $centred, skipped $skipped"
+else
+  announce "Centred $centred floating window(s)"
+fi

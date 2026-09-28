@@ -43,7 +43,9 @@ o.bind("SUPER + CTRL + U", "Symbols", "omarchy-menu summon trigger.symbols")
 o.bind(
   "SUPER + SHIFT + R",
   "Reload Hyprland config",
-  "sh -c 'hyprctl reload && " .. o.notify("Hyprland config reloaded") .. "'"
+  -- Outer DOUBLE quotes: o.notify single-quotes the message, and single quotes
+  -- do not nest, so 'sh -c \'... \'msg\'\'' truncates it to the first word.
+  'sh -c "hyprctl reload && ' .. o.notify("Hyprland config reloaded") .. '"' 
 )
 
 -- Rescue floating windows that have drifted off every screen.
@@ -57,9 +59,8 @@ o.bind(
 -- Centres every floating window on the current workspace; pass --all to sweep
 -- every workspace. Fullscreen windows are skipped -- Hyprland's centre
 -- dispatcher only acts on floating ones.
-o.bind(
-  "SUPER + CTRL + G",
-  "Gather floating windows",
-  "sh -c 'omarchy-center-floating >/dev/null && " ..
-    o.notify("Floating windows centred") .. "'"
-)
+-- The script raises its own notification (--notify) rather than being wrapped
+-- in `sh -c "... && " .. o.notify(...)`: o.notify single-quotes its message,
+-- and nesting that inside a single-quoted sh -c ends the outer quote early, so
+-- only the first word survives as the message.
+o.bind("SUPER + CTRL + G", "Gather floating windows", "omarchy-center-floating --notify")
