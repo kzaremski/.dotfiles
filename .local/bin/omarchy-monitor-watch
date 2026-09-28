@@ -39,8 +39,25 @@ outputs() {
   hyprctl monitors 2>/dev/null | awk '/^Monitor /{print $2}' | sort | paste -sd,
 }
 
+# A reload issues modesets. That is exactly what must NOT be done repeatedly
+# while a link is flapping: on 2026-09-27 this dock produced 103 HPD
+# interrupts in five minutes, the display microcontroller stopped answering
+# ("amdgpu [drm] *ERROR* wait_for_completion_timeout"), the Thunderbolt tunnel
+# collapsed and the machine had to be held down at the power button. The
+# hardware caused that, not this script -- but poking a sick display engine
+# cannot help, so the guards below keep it quiet exactly when things look bad.
+min_interval="${OMARCHY_MONITOR_MIN_INTERVAL:-30}"
+storm_events="${OMARCHY_MONITOR_STORM_EVENTS:-12}"
+storm_window="${OMARCHY_MONITOR_STORM_WINDOW:-60}"
+storm_cooldown="${OMARCHY_MONITOR_STORM_COOLDOWN:-300}"
+
 last=$(outputs)
 pending=0
+last_reload=0
+window_start=$(date +%s)
+window_count=0
+cooldown_until=0
+warned=0
 
 while :; do
   IFS= read -r -t "$debounce" line
@@ -48,7 +65,24 @@ while :; do
 
   if [ $rc -eq 0 ]; then
     case "$line" in
-      monitoradded*|monitorremoved*) pending=1 ;;
+      monitoradded*|monitorremoved*)
+        pending=1
+        now=$(date +%s)
+        if [ $((now - window_start)) -gt "$storm_window" ]; then
+          window_start=$now
+          window_count=0
+        fi
+        window_count=$((window_count + 1))
+        if [ "$window_count" -gt "$storm_events" ] && [ "$now" -ge "$cooldown_until" ]; then
+          cooldown_until=$((now + storm_cooldown))
+          echo "hotplug storm ($window_count events in ${storm_window}s) -- backing off ${storm_cooldown}s" >&2
+          if [ "$warned" -eq 0 ] && command -v omarchy-notification-send >/dev/null; then
+            omarchy-notification-send -u critical \
+              "Display link is flapping -- not touching it. Check the dock cable."
+            warned=1
+          fi
+        fi
+        ;;
     esac
     continue
   fi
@@ -63,12 +97,20 @@ while :; do
   [ "$pending" -eq 1 ] || continue
   pending=0
 
-  now=$(outputs)
-  if [ "$now" = "$last" ]; then
-    continue
-  fi
+  now=$(date +%s)
 
-  last="$now"
+  # A flapping link is not a layout change worth chasing. Wait it out.
+  [ "$now" -lt "$cooldown_until" ] && continue
+
+  # Never modeset more often than this, however the events arrive.
+  [ $((now - last_reload)) -lt "$min_interval" ] && continue
+
+  now_outputs=$(outputs)
+  [ "$now_outputs" = "$last" ] && continue
+
+  last="$now_outputs"
+  last_reload=$now
+  warned=0
 
   # Reload first so monitors.lua re-decides the split for whatever is attached
   # now, then rehome. Both steps are needed and neither replaces the other:
