@@ -97,6 +97,30 @@ dotfiles:
     labels: [system, security, omarchy, current]
     system: true
 
+  - source: etc/sysctl.d/99-sysrq.conf
+    dest: /etc/sysctl.d/99-sysrq.conf
+    description: Full Magic SysRq, so a wedged display need not mean a power cut
+    labels: [system, recovery, omarchy, current]
+    system: true
+
+  - source: etc/ssh/sshd_config.d/99-tailnet.conf
+    dest: /etc/ssh/sshd_config.d/99-tailnet.conf
+    description: SSH for recovery - keys only, reachable on the tailnet via ufw
+    labels: [system, recovery, security, omarchy, current]
+    system: true
+
+  - source: etc/systemd/system.conf.d/50-watchdog.conf
+    dest: /etc/systemd/system.conf.d/50-watchdog.conf
+    description: Hardware watchdog - reboot after 60s of a true kernel hang
+    labels: [system, recovery, omarchy, current]
+    system: true
+
+  - source: etc/limine-entry-tool.d/zz-verbose.conf
+    dest: /etc/limine-entry-tool.d/zz-verbose.conf
+    description: Undo omarchy's quiet/loglevel=0 so failures show on the console
+    labels: [system, recovery, omarchy, current]
+    system: true
+
   - source: .local/bin/comrade
     dest: .local/bin/comrade
     description: Offline assistant - local model + context profiles, no tools
