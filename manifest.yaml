@@ -115,12 +115,6 @@ dotfiles:
     labels: [system, recovery, omarchy, current]
     system: true
 
-  - source: etc/limine-entry-tool.d/zz-verbose.conf
-    dest: /etc/limine-entry-tool.d/zz-verbose.conf
-    description: Undo omarchy's quiet/loglevel=0 so failures show on the console
-    labels: [system, recovery, omarchy, current]
-    system: true
-
   - source: .local/bin/comrade
     dest: .local/bin/comrade
     description: Offline assistant - local model + context profiles, no tools
