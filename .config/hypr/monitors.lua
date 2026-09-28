@@ -121,7 +121,22 @@ local right_state = drm_enabled(right_serial)
 -- connector reads "disabled" and the signal carries no information. Only trust
 -- it once something is actually lit; before that, fall back to mere presence,
 -- which is the old behaviour and correct for a normal docked boot.
-local any_enabled = (left_state == "enabled") or (right_state == "enabled")
+--
+-- This must consider EVERY output, not just the two dock panels. Asking only
+-- about the VE248s gets it exactly backwards in the case that matters: with
+-- one panel absent and the other connected-but-dead, neither reads "enabled",
+-- the check concludes it is looking at a cold boot, falls back to presence and
+-- hands all ten workspaces to the dead panel -- while the internal display,
+-- which is lit and working, sits on a ghost workspace showing an empty desktop.
+local function any_output_enabled()
+  local handle = io.popen([[grep -lx enabled /sys/class/drm/*/enabled 2>/dev/null | head -1]])
+  if not handle then return false end
+  local out = handle:read("*a") or ""
+  handle:close()
+  return out:match("%S") ~= nil
+end
+
+local any_enabled = any_output_enabled()
 
 local function panel_usable(state)
   if state == nil then return false end
