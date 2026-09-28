@@ -109,10 +109,23 @@ ever offered, so:
     "never attempted";
   * Hyprland walks every mode from 1920x1080 down to 720x400, each failing.
 
-Not all of the Pocket's USB-C ports carry DisplayPort. Try another port before
-suspecting the cable, the adapter, the monitor or the driver -- all four were
-chased here first, and all four were fine. The same adapter and panel worked
-immediately on a Mac.
+This is NOT "the port has no DisplayPort". The port in question is the very
+one the Belkin dock runs on, driving two panels. The two get video through
+the port by different means:
+
+  * the dock is a Thunderbolt/USB4 device and its video is DP **tunnelled**
+    over USB4, negotiated as part of Thunderbolt;
+  * a plain adapter like the J5Create wants DisplayPort **alt mode**, where
+    the port remuxes its lanes to carry native DP.
+
+The port grants the first and refuses the second, which is what the Billboard
+Device reports. A Mac does both, which is why the identical adapter and panel
+lit up there immediately.
+
+So for a direct-to-monitor connection on this machine, prefer a Thunderbolt or
+USB4 display adapter over a DP-alt-mode one -- or just use the dock, which
+already works. Do not go hunting the cable, the adapter, the monitor or the
+driver: all four were chased here first, and all four were fine.
 
 ## Dead ends / traps
 
