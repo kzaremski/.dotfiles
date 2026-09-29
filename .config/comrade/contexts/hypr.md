@@ -123,3 +123,32 @@ Limitation: evaluated at config load, so docking mid-session needs a
 - The built-in GPD Pocket 4 panel is natively portrait and needs `transform = 3`
   on BOTH the monitor rule and the touchscreen device rule.
 - Validate every config change with `hyprctl reload` then `hyprctl configerrors`.
+
+## Replugged mouse moves the cursor but cannot click
+
+Symptom: the cursor tracks the mouse normally, but clicks do nothing --
+anywhere, including Wayland-native windows. Keyboard is unaffected.
+
+Cause: a pointer hotplug race. Hyprland adds the device and renders its
+motion, but the seat never gets pointer FOCUS assigned for it. Motion updates
+the cursor regardless of focus; button events need a focused surface to be
+delivered to, so they go nowhere.
+
+Triggered by unplugging and replugging a mouse, including moving it between
+ports on the dock.
+
+Do not chase this as a stuck XWayland grab or dead hardware. Both look
+identical from the outside, and the checks below all come back CLEAN:
+
+    hyprctl devices          # the mouse IS listed
+    hyprctl cursorpos        # returns sane, changing coordinates
+    lsusb                    # device present
+    hyprctl layers           # nothing but background + bar
+
+Fix: generate one pointer event from any other device (the built-in touchpad),
+or force a focus change from the keyboard:
+
+    hyprctl dispatch 'hl.dsp.focus({ direction = "l" })'
+
+Opening the lid is NOT what fixes it -- touching the touchpad is. The lid can
+stay shut.
