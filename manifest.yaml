@@ -186,6 +186,11 @@ dotfiles:
     description: Recentre floating windows that drifted off-screen (SUPER+CTRL+G)
     labels: [tools, omarchy, current]
 
+  - source: .local/bin/omarchy-unstick-mouse
+    dest: .local/bin/omarchy-unstick-mouse
+    description: Free a stuck pointer grab via uinput (SUPER+CTRL+M)
+    labels: [tools, omarchy, wayland, current]
+
   - source: .local/bin/omarchy-monitor-watch
     dest: .local/bin/omarchy-monitor-watch
     description: Reload display rules on monitor hotplug (flaky dock)

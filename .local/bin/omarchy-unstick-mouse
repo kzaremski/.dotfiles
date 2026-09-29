@@ -1,0 +1,75 @@
+#!/usr/bin/env python3
+"""Free a stuck pointer grab by emitting a real pointer event.
+
+Two different faults on this machine leave the cursor moving while clicks go
+nowhere, and both are cleared the same way:
+
+  * a mouse replugged (or moved between dock ports) never gets pointer focus
+    assigned, so button events have no surface to land on;
+  * a fullscreen XWayland game -- Project Zomboid, DaVinci Resolve popups --
+    holds a pointer grab and does not release it when focus leaves.
+    Upstream: hyprwm/Hyprland#3342, still open.
+
+A SYNTHETIC focus change (hyprctl dispatch focus) does NOT clear either one;
+only a genuine pointer event from another device does. Touching the built-in
+touchpad works, which is awkward with the lid shut. This creates a virtual
+pointer via uinput and twitches it one pixel and back, which the compositor
+treats identically.
+
+/dev/uinput carries an ACL granting the seat owner rw, so no root is needed.
+"""
+import fcntl, os, struct, sys, time
+
+UINPUT = "/dev/uinput"
+UI_DEV_CREATE, UI_DEV_DESTROY = 0x5501, 0x5502
+UI_SET_EVBIT, UI_SET_KEYBIT, UI_SET_RELBIT = 0x40045564, 0x40045565, 0x40045566
+EV_SYN, EV_KEY, EV_REL = 0, 1, 2
+REL_X, REL_Y, BTN_LEFT, SYN_REPORT = 0, 1, 0x110, 0
+
+def emit(fd, etype, code, value):
+    # struct input_event: two timevals (16 bytes on 64-bit), type, code, value
+    os.write(fd, struct.pack("@llHHi", 0, 0, etype, code, value))
+
+def main():
+    try:
+        fd = os.open(UINPUT, os.O_WRONLY | os.O_NONBLOCK)
+    except OSError as e:
+        print(f"cannot open {UINPUT}: {e}", file=sys.stderr)
+        print("expected an ACL granting this user rw; check: getfacl /dev/uinput",
+              file=sys.stderr)
+        return 1
+
+    try:
+        fcntl.ioctl(fd, UI_SET_EVBIT, EV_REL)
+        # BOTH axes: libinput rejects a relative pointer that advertises only
+        # one ("was rejected" in the Hyprland log, with no other explanation).
+        fcntl.ioctl(fd, UI_SET_RELBIT, REL_X)
+        fcntl.ioctl(fd, UI_SET_RELBIT, REL_Y)
+        # Declaring a button makes this look like a real pointer rather than a
+        # bare motion source; some compositors ignore the latter.
+        fcntl.ioctl(fd, UI_SET_EVBIT, EV_KEY)
+        fcntl.ioctl(fd, UI_SET_KEYBIT, BTN_LEFT)
+
+        # struct uinput_user_dev: name[80], input_id{bustype,vendor,product,
+        # version}, ff_effects_max, then absmax/absmin/absfuzz/absflat[64] each
+        name = b"omarchy-unstick-mouse".ljust(80, b"\0")
+        os.write(fd, name + struct.pack("@HHHHi", 0x03, 0x1234, 0x5678, 1, 0)
+                 + b"\0" * (4 * 64 * 4))
+        fcntl.ioctl(fd, UI_DEV_CREATE)
+        time.sleep(0.2)          # let the compositor notice the new device
+
+        for dx in (1, -1):       # nudge and return; net cursor movement is zero
+            emit(fd, EV_REL, REL_X, dx)
+            emit(fd, EV_SYN, SYN_REPORT, 0)
+            time.sleep(0.05)
+
+        time.sleep(0.2)
+        fcntl.ioctl(fd, UI_DEV_DESTROY)
+    finally:
+        os.close(fd)
+
+    print("pointer event emitted; clicks should work again")
+    return 0
+
+if __name__ == "__main__":
+    sys.exit(main())

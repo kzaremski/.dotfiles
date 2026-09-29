@@ -64,3 +64,17 @@ o.bind(
 -- and nesting that inside a single-quoted sh -c ends the outer quote early, so
 -- only the first word survives as the message.
 o.bind("SUPER + CTRL + G", "Gather floating windows", "omarchy-center-floating --notify")
+
+-- Free a stuck pointer grab: cursor moves but clicks land nowhere.
+--
+-- Happens two ways, and both need a REAL pointer event to clear -- a
+-- synthetic focus change does nothing:
+--   * a mouse replugged, or moved between dock ports, never gets pointer
+--     focus, so buttons have no surface to go to;
+--   * a fullscreen XWayland game (Project Zomboid, Resolve popups) holds a
+--     grab and keeps it after focus leaves. hyprwm/Hyprland#3342, still open.
+--
+-- Touching the built-in touchpad works but means opening the lid. This emits
+-- the same thing from a virtual uinput pointer, so it works from the keyboard
+-- with the lid shut.
+o.bind("SUPER + CTRL + M", "Unstick mouse", "omarchy-unstick-mouse")
