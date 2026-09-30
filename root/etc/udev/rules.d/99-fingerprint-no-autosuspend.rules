@@ -1,0 +1,27 @@
+# FocalTech FT9201 fingerprint reader (2808:0752) -- keep it awake.
+#
+# NUMBERED 99 DELIBERATELY. libfprint ships 60-libfprint-2.rules which sets
+# ATTR{power/control}="auto" at line 300. At 60-f... this rule ran FIRST and
+# libfprint silently overwrote it -- udevadm test showed both firing, with
+# libfprint's winning. It has to sort last.
+#
+# usbcore autosuspends this device after 2 seconds idle. libfprint-ft9201, the
+# proprietary driver this reader needs, cannot wake it again and fails with:
+#
+#   Device reported an error during verify: Cannot run while suspended.
+#   fpi_device_action_error: assertion 'priv->current_action != ...' failed
+#   libusb: warning [libusb_exit] application left some devices open
+#
+# The failed action leaves the device CLAIMED inside fprintd, so every later
+# scan fails and fprintd-delete / fprintd-enroll report:
+#
+#   failed to claim device: The device has already been opened!
+#
+# which reads as a dead reader. It is not -- the reader is asleep and the
+# driver mishandles it. Recovery once wedged is `systemctl restart fprintd`.
+#
+# Cost of keeping it awake is negligible: a fingerprint sensor idles at a few
+# milliwatts, against a fingerprint login that otherwise silently stops working.
+# Match add AND change: `udevadm trigger` defaults to a change action, so an
+# add-only rule silently does nothing when re-applied to a live device.
+ACTION=="add|change", SUBSYSTEM=="usb", ATTR{idVendor}=="2808", ATTR{idProduct}=="0752", ATTR{power/control}="on"

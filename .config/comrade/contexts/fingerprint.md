@@ -72,3 +72,42 @@ at all, so it logs no no-match and looks like nothing happened.
 
     for f in left-index-finger right-thumb left-thumb; do fprintd-enroll -f $f; done
     fprintd-list "$USER"        # check what is enrolled
+
+## Reader "dies": USB autosuspend leaks the device claim
+
+Symptom: fingerprint stops authenticating. fprintd-delete / fprintd-enroll
+report:
+
+    failed to claim device: The device has already been opened!
+
+Reads as dead hardware. It is not. Chain:
+
+    usbcore autosuspends the reader after 2s idle
+    -> libfprint-ft9201 cannot wake it:
+         "Device reported an error during verify: Cannot run while suspended."
+         "fpi_device_action_error: assertion 'priv->current_action != ...'"
+         "libusb: warning [libusb_exit] application left some devices open"
+    -> the failed action leaves the device CLAIMED inside fprintd
+    -> every later scan fails
+
+Check it:
+
+    for d in /sys/bus/usb/devices/*/; do
+      [ "$(cat $d/idVendor 2>/dev/null)" = 2808 ] &&
+        echo "$(cat $d/power/control) $(cat $d/power/runtime_status)"
+    done
+
+Fixed by root/etc/udev/rules.d/99-fingerprint-no-autosuspend.rules, which
+sets power/control=on. TWO traps in writing that rule:
+
+  * **libfprint re-enables autosuspend.** 60-libfprint-2.rules sets
+    ATTR{power/control}="auto" at line 300. A rule at 60-f... sorts BEFORE it
+    and is silently overwritten. Must be 99. `udevadm test /sys/bus/usb/
+    devices/<dev>` shows both firing and which wins.
+  * **udevadm trigger defaults to a `change` action**, so an ACTION=="add"
+    rule does nothing when re-applied to a live device. Match add|change.
+
+Recovery when already wedged: `sudo systemctl restart fprintd`.
+
+Unrelated benign noise: `g_task_return_pointer: assertion 'G_IS_TASK (task)'
+failed` appears during enrolment and enrolment still succeeds.

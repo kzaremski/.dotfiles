@@ -114,6 +114,12 @@ dotfiles:
     labels: [system, scanner, omarchy, current]
     system: true
 
+  - source: etc/udev/rules.d/99-fingerprint-no-autosuspend.rules
+    dest: /etc/udev/rules.d/99-fingerprint-no-autosuspend.rules
+    description: Stop USB autosuspend wedging the fingerprint reader (must sort after libfprint's)
+    labels: [system, security, omarchy, current]
+    system: true
+
   - source: etc/ssh/sshd_config.d/99-tailnet.conf
     dest: /etc/ssh/sshd_config.d/99-tailnet.conf
     description: SSH for recovery - keys only, reachable on the tailnet via ufw
