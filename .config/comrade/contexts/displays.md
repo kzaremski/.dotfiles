@@ -42,8 +42,17 @@ Link rate is NOT a good predictor of which leg fails:
     RIGHT (TB -> J5Create) Current 4 @ 0x6  vs Verified 4 @ 0x1e  one fifth
 
 The right trains at a fifth of its capability and has been stable; the left
-trained at full capability and died anyway. RBR is a sign of a marginal link,
-not proof that it is the failing one. 5.18 Gbps still carries one 1920x1080@60
+trained at full capability and died anyway.
+
+A LOW LINK RATE IS NOT A FAULT. `Verified` records what link training actually
+proved works -- so `Current: 4 0x6` against `Verified: 4 0x1e` means the driver
+confirmed HBR3 was available and chose RBR anyway. amdgpu picks the minimum
+viable link settings and runs slower to save power. RBR at 4 lanes carries
+5.18 Gbps; 1920x1080@60 at 24bpp needs 3.56. It is sufficient, so it is used.
+
+Read it as a fallback only when `Current` is BELOW `Verified` *and* the mode
+does not fit -- or when `Verified` itself has dropped, which is what a real
+training failure looks like. Neither leg here was ever degraded. 5.18 Gbps still carries one 1920x1080@60
 stream (3.56 Gbps) with room to spare, and the two panels are on SEPARATE
 links -- they do not share a bandwidth budget, so "two streams will not fit"
 reasoning does not apply here.
