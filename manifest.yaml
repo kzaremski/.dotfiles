@@ -55,6 +55,11 @@ dotfiles:
     description: Bar widget - per-monitor workspaces with scroll-to-switch
     labels: [wm, omarchy, wayland, current]
 
+  - source: .config/omarchy/plugins/kzaremski.polkit
+    dest: .config/omarchy/plugins/kzaremski.polkit
+    description: Polkit agent clone - show the fingerprint icon with the lid shut
+    labels: [wm, omarchy, security, current]
+
   # Electron reads XDG_CURRENT_DESKTOP to choose a credential backend and does
   # not recognise "Hyprland"; without this it can fall back to plaintext and
   # report that sign-in will not be saved.
