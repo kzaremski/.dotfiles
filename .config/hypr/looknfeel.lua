@@ -67,3 +67,22 @@
 -- speed is duration in deciseconds (1 = 100ms); lower is snappier.
 -- easeOutQuint is defined by Omarchy's defaults.
 hl.animation({ leaf = "workspaces", enabled = true, speed = 5, bezier = "easeOutQuint", style = "slide" })
+
+-- Force software cursors.
+--
+-- With the hardware cursor plane in use, XWayland games can end up with a
+-- cursor that moves normally while clicks go nowhere -- menus and aiming both
+-- dead, cleared only by moving the window between monitors or by input from a
+-- second pointer device. Observed here with Project Zomboid, Prey and TF2.
+-- Upstream: hyprwm/Hyprland#8146.
+--
+-- The plane is managed by the GPU independently of the compositor's own
+-- cursor rendering, and older games' pointer grabs do not cope with that.
+-- Drawing the cursor in software costs a little performance and removes the
+-- conflict. no_hardware_cursors defaults to 2 (auto), which chose hardware
+-- here.
+hl.config({
+  cursor = {
+    no_hardware_cursors = true,
+  },
+})
