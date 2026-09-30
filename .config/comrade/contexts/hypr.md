@@ -124,31 +124,63 @@ Limitation: evaluated at config load, so docking mid-session needs a
   on BOTH the monitor rule and the touchscreen device rule.
 - Validate every config change with `hyprctl reload` then `hyprctl configerrors`.
 
-## Replugged mouse moves the cursor but cannot click
+## Cursor moves but clicks do nothing
 
-Symptom: the cursor tracks the mouse normally, but clicks do nothing --
-anywhere, including Wayland-native windows. Keyboard is unaffected.
+TWO different faults share this symptom. They need different answers, and the
+fix for one does NOT work on the other.
 
-Cause: a pointer hotplug race. Hyprland adds the device and renders its
-motion, but the seat never gets pointer FOCUS assigned for it. Motion updates
-the cursor regardless of focus; button events need a focused surface to be
-delivered to, so they go nowhere.
+### 1. Replugged pointer never gets focus
 
 Triggered by unplugging and replugging a mouse, including moving it between
 ports on the dock.
 
-Do not chase this as a stuck XWayland grab or dead hardware. Both look
-identical from the outside, and the checks below all come back CLEAN:
+Hyprland adds the device and renders its motion, but the seat never assigns
+pointer FOCUS for it. Motion updates the cursor regardless of focus; button
+events need a focused surface, so they go nowhere.
+
+Cleared by one pointer event from any other device, or:
+
+    omarchy-unstick-mouse            # SUPER+CTRL+M
+
+### 2. XWayland game leaves clicks dead -- hyprwm/Hyprland#8146
+
+Triggered by playing a fullscreen XWayland game. Seen with Project Zomboid,
+Prey and TF2. Clicks die everywhere afterwards, not just in the game.
+
+This is an OPEN UPSTREAM BUG, not a misconfiguration here. The cause is the
+hardware cursor plane: it is driven by the GPU independently of the
+compositor's cursor rendering, and older games' pointer grabs do not cope.
+
+**omarchy-unstick-mouse does NOT fix this one.** Neither does a focus change,
+a compositor-side cursor warp (hl.dsp.cursor.move), nor moving the window
+between monitors -- which is the workaround the upstream issue reports, and it
+failed here. All four were tried against a live fault and none worked.
+
+The ONLY thing confirmed to clear it: **open the lid and wiggle the built-in
+trackpad.** Works every time. A synthetic uinput pointer does not substitute,
+even emitting a full second of sustained motion on both axes with the device
+staying registered throughout -- verified, it stays stuck.
+
+Preventive fix, applied 2026-09-29 and ON TRIAL: software cursors, in
+looknfeel.lua:
+
+    cursor = { no_hardware_cursors = true }
+
+The default is 2 (auto), which chose hardware here. Expected to stop the
+fault occurring; it does not rescue a session already in it. If the fault
+recurs with this set, software cursors were not the answer and the next step
+is upstream, not more local patching.
+
+### Do not chase these as hardware
+
+Every obvious check comes back CLEAN in both cases:
 
     hyprctl devices          # the mouse IS listed
     hyprctl cursorpos        # returns sane, changing coordinates
     lsusb                    # device present
     hyprctl layers           # nothing but background + bar
 
-Fix: generate one pointer event from any other device (the built-in touchpad),
-or force a focus change from the keyboard:
+Also not the cause, all checked: a stuck XWayland grab (killing Xwayland is
+not even possible -- it is a Hyprland child and ignores SIGTERM), leftover
+game processes, fcitx5, mixed DPI, and the dock.
 
-    hyprctl dispatch 'hl.dsp.focus({ direction = "l" })'
-
-Opening the lid is NOT what fixes it -- touching the touchpad is. The lid can
-stay shut.
