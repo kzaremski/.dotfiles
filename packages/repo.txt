@@ -49,11 +49,13 @@ fd
 ffmpeg4.4
 ffmpegthumbnailer
 figlet
+firefox
 foot
 fprintd
 freerdp
 fuse2
 fzf
+gamescope
 gimp
 git
 gnome-disk-utility
