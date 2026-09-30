@@ -56,14 +56,22 @@ def main():
         os.write(fd, name + struct.pack("@HHHHi", 0x03, 0x1234, 0x5678, 1, 0)
                  + b"\0" * (4 * 64 * 4))
         fcntl.ioctl(fd, UI_DEV_CREATE)
-        time.sleep(0.2)          # let the compositor notice the new device
 
-        for dx in (1, -1):       # nudge and return; net cursor movement is zero
-            emit(fd, EV_REL, REL_X, dx)
+        # Timing matters more than the events themselves. An earlier version
+        # created the device, fired two events 50ms apart and destroyed it
+        # inside half a second -- Hyprland listed the device but clicks stayed
+        # stuck, while moving the real touchpad fixed it immediately. A
+        # touchpad is a persistent device emitting a continuous stream, so
+        # mimic that: settle, move for about a second, settle again.
+        time.sleep(0.4)
+
+        for i in range(40):      # ~1s of motion, alternating so net travel is 0
+            emit(fd, EV_REL, REL_X, 1 if i % 2 == 0 else -1)
+            emit(fd, EV_REL, REL_Y, 1 if i % 4 < 2 else -1)
             emit(fd, EV_SYN, SYN_REPORT, 0)
-            time.sleep(0.05)
+            time.sleep(0.025)
 
-        time.sleep(0.2)
+        time.sleep(0.4)
         fcntl.ioctl(fd, UI_DEV_DESTROY)
     finally:
         os.close(fd)
