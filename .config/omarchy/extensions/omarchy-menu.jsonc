@@ -157,6 +157,12 @@
   // monitor can leave one parked in negative space: listed by hyprctl and
   // focusable by keyboard, but under no monitor, so the mouse cannot reach
   // it. Sweeps every workspace; also on SUPER+CTRL+G.
+  // ---- Run a command ---------------------------------------------------
+  // Prompts via omarchy-menu-input (the menu's own input mode) and runs the
+  // result in a floating terminal so output is visible. Not an app launcher --
+  // the Apps section already does that, detached and without a terminal.
+  "trigger.utilities.run": {"icon":"\uf120","label":"Run command","aliases":["run","exec","command","shell","cmd"],"description":"Type a shell command and see its output","action":"omarchy-run-command"},
+
   "trigger.utilities.center-floating": {"icon":"\uf05b","label":"Centre floating windows","aliases":["center","centre","floating","offscreen","lost","rescue"],"description":"Pull floating windows that drifted off-screen back onto a monitor","action":"omarchy-center-floating --all --notify"}
 
 }

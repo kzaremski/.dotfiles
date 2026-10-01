@@ -1,0 +1,31 @@
+#!/bin/bash
+# Prompt for a shell command from the Omarchy menu and run it in a floating
+# terminal, so its output is visible rather than vanishing.
+#
+# This is deliberately NOT an app launcher -- the menu's Apps section already
+# does that, and it launches detached with no terminal. This is for the cases
+# where you want to see what happened: a one-off pacman query, a script, a
+# command whose exit status matters.
+#
+# Nothing is escaped or sanitised: whatever is typed is handed to bash -c as
+# written. That is the point of a run-command box, and it runs as this user
+# with no elevation, so it can do exactly what a shell prompt could.
+set -uo pipefail
+
+cmd=$(omarchy-menu-input "Run command" --width 500) || exit 0
+# Trim whitespace; an empty or cancelled prompt should do nothing at all.
+cmd="${cmd#"${cmd%%[![:space:]]*}"}"
+cmd="${cmd%"${cmd##*[![:space:]]}"}"
+[ -n "$cmd" ] || exit 0
+
+# Keep a history, append-only, so a mistyped command can be recovered and a
+# useful one found again. Deduplicated against the previous entry only --
+# cheap, and enough to stop a repeated command filling the file.
+hist="${XDG_STATE_HOME:-$HOME/.local/state}/omarchy/run-command-history"
+mkdir -p "$(dirname "$hist")"
+[ "$(tail -n1 "$hist" 2>/dev/null)" = "$cmd" ] || printf '%s\n' "$cmd" >>"$hist"
+
+# The presentation wrapper shows the logo, runs the command, then waits on a
+# keypress so output stays readable. It swallows exit status, so echo it.
+omarchy-launch-floating-terminal-with-presentation \
+  "printf '\$ %s\n\n' $(printf '%q' "$cmd"); bash -c $(printf '%q' "$cmd"); printf '\n[exit %s]\n' \$?"

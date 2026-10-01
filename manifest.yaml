@@ -207,6 +207,11 @@ dotfiles:
     description: Free a stuck pointer grab via uinput (SUPER+CTRL+M)
     labels: [tools, omarchy, wayland, current]
 
+  - source: .local/bin/omarchy-run-command
+    dest: .local/bin/omarchy-run-command
+    description: Menu entry - type a shell command, see its output in a terminal
+    labels: [tools, omarchy, current]
+
   - source: .local/bin/omarchy-monitor-watch
     dest: .local/bin/omarchy-monitor-watch
     description: Reload display rules on monitor hotplug (flaky dock)
