@@ -1,6 +1,11 @@
 #!/bin/bash
 # Replace AAC audio with PCM in place, leaving the video stream untouched.
 #
+# Takes any mix of files and directories:
+#   resolve-fix-audio clip.MP4
+#   resolve-fix-audio ~/Videos/shoot
+#   resolve-fix-audio a.MP4 b.mov ~/Videos/shoot
+#
 # Resolve on Linux cannot decode AAC in ANY edition. Video is stream-copied, so
 # this is lossless and takes ~0.1s per clip. -map 0 preserves DJI gyro/telemetry
 # streams, which Gyroflow needs and a narrower mapping silently drops.
@@ -16,7 +21,44 @@
 # checked only the video hash, so a 22-minute screen recording carrying 8s of
 # audio passed silently as "ok".
 set -uo pipefail
-DIR="${1:?usage: resolve-fix-audio <dir of clips>}"
+
+usage() {
+  cat >&2 <<'USAGE'
+usage: resolve-fix-audio <file|dir> [file|dir ...]
+
+  file  convert that clip
+  dir   convert every .MP4/.mp4/.mov/.MOV directly inside it (not recursive)
+
+Mixing the two is fine. A path that does not exist is an error -- an earlier
+version took only a directory, so passing a filename silently matched nothing,
+printed "converted=0" and exited 0, which looks exactly like success.
+USAGE
+  exit 2
+}
+
+[ $# -ge 1 ] || usage
+
+# Expand arguments into a concrete list of clips before touching anything, so a
+# bad path fails before any file is rewritten.
+targets=()
+for arg in "$@"; do
+  if [ -d "$arg" ]; then
+    for f in "$arg"/*.MP4 "$arg"/*.mov "$arg"/*.MOV "$arg"/*.mp4; do
+      [ -f "$f" ] && targets+=("$f")
+    done
+  elif [ -f "$arg" ]; then
+    targets+=("$arg")
+  else
+    echo "  no such file or directory: $arg" >&2
+    exit 2
+  fi
+done
+
+if [ ${#targets[@]} -eq 0 ]; then
+  echo "  no .MP4/.mp4/.mov/.MOV clips found in: $*" >&2
+  exit 1
+fi
+
 ok=0; skip=0; fail=0; warn=0
 
 # Stream duration in seconds, or empty.
@@ -32,8 +74,7 @@ nsamples() { ffmpeg -nostdin -v info -i "$1" -map 0:a:0 -af astats=metadata=1 \
              -f null - 2>&1 | grep -m1 -oE "Number of samples: [0-9]+" \
              | grep -oE "[0-9]+$"; }
 
-for f in "$DIR"/*.MP4 "$DIR"/*.mov "$DIR"/*.MOV "$DIR"/*.mp4; do
-  [ -f "$f" ] || continue
+for f in "${targets[@]}"; do
   base=$(basename "$f")
 
   if ffprobe -v error -select_streams a -show_entries stream=codec_name \
