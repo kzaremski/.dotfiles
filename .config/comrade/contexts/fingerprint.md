@@ -111,3 +111,25 @@ Recovery when already wedged: `sudo systemctl restart fprintd`.
 
 Unrelated benign noise: `g_task_return_pointer: assertion 'G_IS_TASK (task)'
 failed` appears during enrolment and enrolment still succeeds.
+
+## Password typed but Enter does nothing (polkit)
+
+Not a keyboard fault. The omarchy polkit agent gates submit on PAM having
+actually asked for a password:
+
+    } else if (event.key === Qt.Key_Return || event.key === Qt.Key_Enter) {
+        if (root.responseRequired) root.submitResponse()
+
+pam_fprintd BLOCKS the whole stack while it waits for a finger, and pam_unix
+below it is never reached until it gives up. With no timeout that is 30s. The
+text field accepts typing the entire time, so Return looks dead -- on whichever
+keyboard you happen to be using. Walking to a different keyboard "fixes" it
+only because the walk burns the remaining seconds.
+
+/etc/pam.d/polkit-1 now matches sudo:
+
+    auth sufficient pam_fprintd.so timeout=10 max-tries=3
+
+timeout is the TOTAL budget before returning failure, not per attempt, so three
+tries still fit inside ten seconds. Verified 2026-09-30: Enter submits
+correctly from the external Apple keyboard.
