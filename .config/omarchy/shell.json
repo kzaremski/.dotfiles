@@ -66,5 +66,15 @@
       ]
     }
   },
-  "plugins": []
+  "plugins": [
+    {
+      "id": "kzaremski.polkit"
+    }
+  ],
+  "disabledPlugins": [
+    "omarchy.polkit"
+  ],
+  "cloneSourceRestores": [
+    "kzaremski.polkit"
+  ]
 }

@@ -11,11 +11,11 @@
 #   LUT       where Resolve's LUT browser reads -- needed to add your own.
 #   Fusion/LUTs   same, for Fusion.
 #
-# .license gets 0777, NOT owner-only. It holds an RLM licence-manager tree
+# .license gets 0777, NOT owner-only. It holds an RLM license-manager tree
 # (Do-NOT-Touch-Anything-in-This-RLM-Directory), Resolve creates it world-
 # writable itself, and the Arch/AUR community documents 777 as required.
 # Tightening it to 755/644 "for neatness" makes Resolve re-prompt for the
-# licence key on EVERY start -- the activation no longer persists. Do not.
+# license key on EVERY start -- the activation no longer persists. Do not.
 #
 # pacman resets ownership on every Resolve upgrade -- re-run this afterwards.
 set -uo pipefail

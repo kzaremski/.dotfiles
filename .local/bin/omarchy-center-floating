@@ -1,5 +1,5 @@
 #!/bin/bash
-# Centre every floating window on the current workspace.
+# Center every floating window on the current workspace.
 #
 # Floating windows hold absolute pixel coordinates, so when a monitor is
 # unplugged or the layout shifts, a window can end up parked entirely in
@@ -16,7 +16,7 @@
 # o.notify() single-quotes its message, and nesting that inside a single-quoted
 # sh -c silently truncates it to the first word.
 #
-# Fullscreen windows are skipped: Hyprland's centre dispatcher only acts on
+# Fullscreen windows are skipped: Hyprland's center dispatcher only acts on
 # floating windows and reports "No floating window found" for them.
 set -uo pipefail
 
@@ -59,12 +59,12 @@ PY
 )
 
 if [ ${#rows[@]} -eq 0 ]; then
-  echo "no floating windows to centre"
-  announce "No floating windows to centre"
+  echo "no floating windows to center"
+  announce "No floating windows to center"
   exit 0
 fi
 
-centred=0 skipped=0
+centered=0 skipped=0
 for row in "${rows[@]}"; do
   IFS=$'\t' read -r addr state cls ws <<<"$row"
   if [ "$state" = fullscreen ]; then
@@ -73,20 +73,20 @@ for row in "${rows[@]}"; do
     continue
   fi
   if hyprctl dispatch "hl.dsp.window.center({ window = \"address:$addr\" })" >/dev/null 2>&1; then
-    echo "  centred $cls (ws $ws)"
-    centred=$((centred + 1))
+    echo "  centered $cls (ws $ws)"
+    centered=$((centered + 1))
   else
     echo "  FAILED  $cls (ws $ws)"
     skipped=$((skipped + 1))
   fi
 done
 
-echo "centred $centred, skipped $skipped"
+echo "centered $centered, skipped $skipped"
 
-if [ "$centred" -eq 0 ]; then
-  announce "Nothing to centre (skipped $skipped)"
+if [ "$centered" -eq 0 ]; then
+  announce "Nothing to center (skipped $skipped)"
 elif [ "$skipped" -gt 0 ]; then
-  announce "Centred $centred, skipped $skipped"
+  announce "Centered $centered, skipped $skipped"
 else
-  announce "Centred $centred floating window(s)"
+  announce "Centered $centered floating window(s)"
 fi

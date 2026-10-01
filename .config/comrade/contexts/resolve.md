@@ -56,10 +56,10 @@ That script re-owns every directory Resolve needs to write:
 
 **pacman resets ownership on every Resolve upgrade** -- re-run it afterwards.
 
-**`.license` must be 0777, not 755.** It holds an RLM licence-manager tree
+**`.license` must be 0777, not 755.** It holds an RLM license-manager tree
 (`Do-NOT-Touch-Anything-in-This-RLM-Directory`), Resolve creates it world-
 writable itself, and the Arch/AUR community documents 777 as required.
-Tightening it "for neatness" makes Resolve **re-prompt for the licence key on
+Tightening it "for neatness" makes Resolve **re-prompt for the license key on
 every start** -- activation stops persisting, with `LeManager ERROR 24, 291`
 and `22, 334, -4` in the log. This was done once and cost an evening.
 
@@ -101,7 +101,7 @@ Do NOT apply the widely-circulated `stayfocused` rule -- it pins focus to the
 popup, which *causes* this symptom. It's the fix for the opposite problem (popups
 vanishing on pointer-leave). Workaround: dismiss dialogs before clicking away.
 
-## "Asks for the licence key on every start"
+## "Asks for the license key on every start"
 
 Not a licensing problem -- a permissions one. See the `.license` 0777 note
 above. `pkexec resolve-perms "$USER"` restores it.

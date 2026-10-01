@@ -24,7 +24,7 @@ hl.env("GDK_SCALE", tostring(omarchy_gdk_scale))
 -- hotplugged, which overwrites this panel's scale (dropping it to 1 and
 -- making everything tiny) while leaving the rotation in place. Verified on
 -- 0.56.2. Unmatched external monitors fall back to Hyprland's own defaults,
--- which is the behaviour a catch-all would have provided anyway.
+-- which is the behavior a catch-all would have provided anyway.
 local function gpd_panel_connector()
   local cmd = [[for d in /sys/class/drm/card*-*; do ]]
     .. [[if grep -qa 'YHB03P24' "$d/edid" 2>/dev/null; then ]]
@@ -120,7 +120,7 @@ local right_state = drm_enabled(right_serial)
 -- On the very first parse Hyprland has not configured any output yet, so every
 -- connector reads "disabled" and the signal carries no information. Only trust
 -- it once something is actually lit; before that, fall back to mere presence,
--- which is the old behaviour and correct for a normal docked boot.
+-- which is the old behavior and correct for a normal docked boot.
 --
 -- This must consider EVERY output, not just the two dock panels. Asking only
 -- about the VE248s gets it exactly backwards in the case that matters: with
@@ -191,7 +191,7 @@ hl.monitor({
 -- default = true makes that workspace the one the monitor lands on.
 --
 -- Neither attached: no rules at all. persistent = true creates the workspace
--- even when the monitor its rule names is absent -- known Hyprland behaviour
+-- even when the monitor its rule names is absent -- known Hyprland behavior
 -- (hyprwm/Hyprland#11758, #9947; Waybar hits it too, Alexays/Waybar#3110).
 -- Undocked, these rules therefore claimed 1-10 for monitors that do not exist,
 -- leaving the built-in panel with no workspace of its own: Hyprland allocated

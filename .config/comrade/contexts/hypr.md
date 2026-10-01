@@ -92,7 +92,7 @@ That is the value this machine's built-in panel needs.
 ## TRAP: persistent workspace rules claim numbers even when the monitor is absent
 
 `persistent = true` creates the workspace **even when the monitor its rule names
-is not attached** -- known upstream behaviour (hyprwm/Hyprland#11758, #9947;
+is not attached** -- known upstream behavior (hyprwm/Hyprland#11758, #9947;
 Waybar hits it too, Alexays/Waybar#3110).
 
 Consequence here: pinning 1-5 and 6-10 to the two dock monitors by `desc:` meant
@@ -142,34 +142,43 @@ Cleared by one pointer event from any other device, or:
 
     omarchy-unstick-mouse            # SUPER+CTRL+M
 
-### 2. XWayland game leaves clicks dead -- hyprwm/Hyprland#8146
+### 2. XWayland app leaves clicks dead -- hyprwm/Hyprland#8146
 
-Triggered by playing a fullscreen XWayland game. Seen with Project Zomboid,
-Prey and TF2. Clicks die everywhere afterwards, not just in the game.
+NOT games specifically. Seen with Project Zomboid, Prey, TF2 **and DaVinci
+Resolve**. The common factor is an XWayland app, not gaming. Games trigger it
+more because of the sheer rate of input, not because they are games -- Resolve
+took one odd interaction to do the same thing.
 
-This is an OPEN UPSTREAM BUG, not a misconfiguration here. The cause is the
-hardware cursor plane: it is driven by the GPU independently of the
-compositor's cursor rendering, and older games' pointer grabs do not cope.
+Clicks die everywhere afterward, not just in the app.
 
-**omarchy-unstick-mouse does NOT fix this one.** Neither does a focus change,
-a compositor-side cursor warp (hl.dsp.cursor.move), nor moving the window
-between monitors -- which is the workaround the upstream issue reports, and it
-failed here. All four were tried against a live fault and none worked.
+What the fault actually looks like, which is more specific than "no clicks":
 
-The ONLY thing confirmed to clear it: **open the lid and wiggle the built-in
-trackpad.** Works every time. A synthetic uinput pointer does not substitute,
-even emitting a full second of sustained motion on both axes with the device
-staying registered throughout -- verified, it stays stuck.
+    already-active mouse   moves the cursor, no clicks
+    NEWLY plugged mouse    nothing at all -- no motion, no clicks
+    trackpad (pre-existing) moves, clicks, AND fixes everything
 
-Preventive fix, applied 2026-09-29 and ON TRIAL: software cursors, in
-looknfeel.lua:
+So it is not "any pointer event clears it". A wedged seat will not accept NEW
+pointer devices at all; what clears it is switching to a DIFFERENT,
+ALREADY-REGISTERED device. Confirmed by plugging a second external mouse while
+wedged: Hyprland listed it in `hyprctl devices` and it was completely inert,
+while the original mouse still moved the cursor.
 
-    cursor = { no_hardware_cursors = true }
+**omarchy-unstick-mouse CANNOT fix this**, and SUPER+CTRL+M will not help. It
+works by creating a new virtual uinput pointer, which is exactly the class of
+device a wedged seat ignores. The tool remains valid for fault 1 above.
 
-The default is 2 (auto), which chose hardware here. Expected to stop the
-fault occurring; it does not rescue a session already in it. If the fault
-recurs with this set, software cursors were not the answer and the next step
-is upstream, not more local patching.
+Everything tried against a live fault that did NOT work:
+
+  * omarchy-unstick-mouse / SUPER+CTRL+M (new device -- ignored)
+  * a focus change (`hl.dsp.focus`)
+  * a compositor-side cursor warp (`hl.dsp.cursor.move`)
+  * moving the window between monitors (the workaround #8146 itself reports)
+  * **software cursors** -- `cursor:no_hardware_cursors = true` was applied,
+    the machine rebooted with it active, and the fault still occurred. The
+    hardware cursor plane is NOT the cause here, whatever #8146 says.
+
+The ONLY thing confirmed to clear it: **open the lid and move the built-in
+trackpad.** Works every time.
 
 ### Do not chase these as hardware
 

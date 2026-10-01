@@ -5,7 +5,7 @@
 #   resolve-unstick -l     ...then relaunch via resolve-scaled
 #
 # Why this is needed: Resolve uses a Qt single-instance lock. If an instance is
-# alive but wedged (no window -- typically stuck on a licence or crash dialog),
+# alive but wedged (no window -- typically stuck on a license or crash dialog),
 # every new launch finds the lock, hands off to the dead instance and exits 0
 # silently. It looks exactly like "Resolve won't start": no window, no error,
 # nothing in the log.

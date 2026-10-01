@@ -57,7 +57,7 @@ o.bind(
 -- with Forza, which sat at x=-1760 after the internal panel went away.
 --
 -- Centres every floating window on the current workspace; pass --all to sweep
--- every workspace. Fullscreen windows are skipped -- Hyprland's centre
+-- every workspace. Fullscreen windows are skipped -- Hyprland's center
 -- dispatcher only acts on floating ones.
 -- The script raises its own notification (--notify) rather than being wrapped
 -- in `sh -c "... && " .. o.notify(...)`: o.notify single-quotes its message,
