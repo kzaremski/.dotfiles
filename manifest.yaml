@@ -23,6 +23,11 @@ dotfiles:
     description: Claude Code settings (theme, TUI, commit attribution)
     labels: [dev, common, macos]
 
+  - source: claude/CLAUDE.md
+    dest: .claude/CLAUDE.md
+    description: Working-style rules Claude Code reads at session start
+    labels: [dev, common, macos]
+
   # Shell prompt (junkfood port, see the comments in the file)
   - source: .config/starship.toml
     dest: .config/starship.toml

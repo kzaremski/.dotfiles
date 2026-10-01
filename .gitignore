@@ -1,6 +1,9 @@
 # Claude Code (use claude/ folder for commands, ignore .claude/ entirely)
 .claude/
 CLAUDE.md
+# ...except the one this repo manages and symlinks to ~/.claude/CLAUDE.md.
+# The blanket rule above is for per-project CLAUDE.md files that /init writes.
+!claude/CLAUDE.md
 
 # Python
 __pycache__/
