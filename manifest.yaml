@@ -421,3 +421,27 @@ dotfiles:
     dest: .config/ranger
     description: Ranger terminal file manager config
     labels: [tools, common, macos]
+
+  # yazi, the TUI file manager (SUPER+SHIFT+F in foot).
+  #
+  # File-level rather than the whole directory: plugins/ holds third-party code
+  # that `ya pkg` clones, and package.toml already pins each plugin's revision,
+  # so `ya pkg install` rebuilds that tree. Tracking it would duplicate
+  # upstream source in this repo for no gain.
+  - source: .config/yazi/keymap.toml
+    dest: .config/yazi/keymap.toml
+    description: yazi keybindings (mount manager on M)
+    labels: [tools, omarchy, current, macos]
+
+  - source: .config/yazi/package.toml
+    dest: .config/yazi/package.toml
+    description: yazi plugin revision pins, replayed by `ya pkg install`
+    labels: [tools, omarchy, current, macos]
+
+  # Voxtype whisper dictation (F9 push-to-talk, SUPER+CTRL+X toggle).
+  # The model lives in ~/.local/share/voxtype/models (147MB) and is downloaded
+  # by `voxtype setup --download`, so only the config is tracked.
+  - source: .config/voxtype/config.toml
+    dest: .config/voxtype/config.toml
+    description: Voxtype dictation config (base.en model, Vulkan backend)
+    labels: [tools, omarchy, wayland, current]

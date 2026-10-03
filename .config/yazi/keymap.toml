@@ -1,0 +1,15 @@
+# yazi keybinding overrides.
+#
+# prepend_keymap (not keymap) so this only adds to yazi's built-in defaults
+# instead of replacing them -- upstream keeps its own bindings and new ones
+# arrive on upgrade.
+
+# Mount manager: yazi-rs/plugins:mount, driving udisksctl.
+# Mounts land in /run/media/$USER/<label>, the same place udisks2 puts them for
+# nautilus, so both see the same mount. m mounts, u unmounts, e ejects, q quits.
+# Network/MTP shares (gvfs, /run/user/1000/gvfs) are NOT handled here -- those
+# still need `gio mount` or nautilus.
+[[mgr.prepend_keymap]]
+on = "M"
+run = "plugin mount"
+desc = "Mount manager"

@@ -50,6 +50,12 @@ o.bind("SUPER + CTRL + U", "Symbols", "omarchy-menu summon trigger.symbols")
 hl.unbind("SUPER + SHIFT + F")
 o.bind("SUPER + SHIFT + F", "File manager (yazi)", { tui = "yazi", focus = true })
 
+-- Nautilus on its own key, since yazi took SUPER+SHIFT+F. Omarchy's own
+-- nautilus binding (SUPER+ALT+SHIFT+F) opens in the active terminal's cwd;
+-- this one is the plain launch. Reach for it for gvfs mounts and Nextcloud
+-- sync overlays, which a TUI cannot show.
+o.bind("SUPER + CTRL + SHIFT + F", "File manager (nautilus)", { omarchy = "nautilus" })
+
 -- Reload the Hyprland config without logging out.
 --
 -- Needed in particular after docking: monitors.lua gates the workspace pinning
