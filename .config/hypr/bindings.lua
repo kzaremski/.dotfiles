@@ -34,6 +34,22 @@
 -- SUPER+CTRL+U because S/E and most other CTRL combos are already bound.
 o.bind("SUPER + CTRL + U", "Symbols", "omarchy-menu summon trigger.symbols")
 
+-- yazi, the TUI file manager, on the file-manager key.
+--
+-- Omarchy binds SUPER+SHIFT+F to nautilus by default; nautilus moves off this
+-- key but stays on SUPER+ALT+SHIFT+F ("File manager (cwd)") and is still the
+-- inode/directory handler. It is kept deliberately: it does gvfs
+-- mounting/unmounting and shows Nextcloud sync-status overlays, neither of
+-- which a terminal file manager can do.
+--
+-- { tui = ... } routes through omarchy-launch-tui -> xdg-terminal-exec, and
+-- ~/.config/xdg-terminals.list lists foot.desktop first, so this opens in foot.
+-- focus = true picks omarchy-launch-or-focus-tui, so pressing the key again
+-- raises the existing window (app-id org.omarchy.yazi) instead of stacking new
+-- ones. yazi has its own tabs (t) when more than one pane is wanted.
+hl.unbind("SUPER + SHIFT + F")
+o.bind("SUPER + SHIFT + F", "File manager (yazi)", { tui = "yazi", focus = true })
+
 -- Reload the Hyprland config without logging out.
 --
 -- Needed in particular after docking: monitors.lua gates the workspace pinning

@@ -23,3 +23,20 @@ alias pw='cd ~/Work && claude --resume "Pocket Worker"'
 if [ -z "$SSH_AUTH_SOCK" ] && [ -S "$XDG_RUNTIME_DIR/ssh-agent.socket" ]; then
   export SSH_AUTH_SOCK="$XDG_RUNTIME_DIR/ssh-agent.socket"
 fi
+
+# yazi, but leave the shell wherever you navigated to.
+#
+# Plain `yazi` always drops you back where you started, which is the thing
+# people miss when they first try it. --cwd-file makes yazi write its final
+# directory out on exit, and this reads it back and cds there.
+#
+# `y` rather than overriding `yazi`: keeping the bare command untouched means
+# scripts and the SUPER+SHIFT+F binding behave normally.
+y() {
+  local tmp cwd
+  tmp="$(mktemp -t yazi-cwd.XXXXXX)" || return
+  yazi "$@" --cwd-file="$tmp"
+  IFS= read -r -d '' cwd <"$tmp"
+  [ -n "$cwd" ] && [ "$cwd" != "$PWD" ] && builtin cd -- "$cwd"
+  rm -f -- "$tmp"
+}
